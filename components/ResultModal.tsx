@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 
 interface Props {
   wpm: number;
@@ -10,6 +11,17 @@ interface Props {
 }
 
 export default function ResultModal({ wpm, accuracy, errors, duration, onRetry, onClose }: Props) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onRetry();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onRetry]);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm fade-in">
       <div
