@@ -4,7 +4,7 @@
   --color-bg: #0f0f0f;
   --color-text: #e2e8f0;
   --color-accent: #6366f1;
-  --color-sub: rgba(226,232,240,0.35);
+  --color-sub: color-mix(in srgb, var(--color-text) 35%, transparent);
   --color-correct: #22c55e;
   --color-error: #ef4444;
   --color-error-bg: rgba(239,68,68,0.15);
