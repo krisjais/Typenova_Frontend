@@ -88,6 +88,19 @@ export default function PracticePage() {
     setSaved(false);
   };
 
+  // Enter to go Next
+  useEffect(() => {
+    if (!isComplete) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        reset(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  });
+
   const threshold = LEVEL_THRESHOLDS[effectiveLevel];
   const badge = effectiveLevel === 'beginner' ? '🌱' : effectiveLevel === 'intermediate' ? '⚡' : '🔥';
 

@@ -260,6 +260,17 @@ function ResultScreen({
   correct: number; wpmHistory: { t: number; wpm: number }[];
   mode: string; onRetry: () => void;
 }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onRetry();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onRetry]);
+
   return (
     <div className="slide-up">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
