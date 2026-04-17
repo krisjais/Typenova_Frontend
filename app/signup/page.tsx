@@ -24,7 +24,7 @@ export default function SignupPage() {
     }
     try {
       await signup(form.username, form.email, form.password);
-      router.push('/dashboard');
+      router.push('/practice');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Signup failed');
     } finally {
