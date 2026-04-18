@@ -47,12 +47,26 @@ export function checkPromotion(level: Level, recentWpms: number[]): Level | null
 
 // ─── Level-based content ─────────────────────────────────────────────────────
 
+// Keybr-inspired algorithm for Beginners. Uses primarily the easiest physiological keys:
+// e, n, i, t, r, l, s, a, o, h. These keep the fingers anchored on the home row 
+// and the most natural index/middle finger extensions.
 const BEGINNER_WORDS = [
-  'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her',
-  'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how',
-  'man', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did',
-  'its', 'let', 'put', 'say', 'she', 'too', 'use', 'cat', 'dog', 'run',
-  'big', 'red', 'sun', 'fun', 'top', 'sit', 'hat', 'cup', 'map', 'bed',
+  'the', 'that', 'this', 'there', 'these', 'those', 'then', 'than',
+  'she', 'her', 'here', 'hero', 'hear', 'heart', 'heat', 'hate',
+  'see', 'seen', 'seat', 'sit', 'sat', 'set', 'star', 'start', 'stare', 'store', 'stone',
+  'are', 'art', 'area', 'arise', 'arose', 'air', 'ear', 'eat', 'era', 'east', 'earn',
+  'one', 'on', 'ort', 'our', 'other', 'into', 'onto',
+  'in', 'is', 'it', 'its', 'iron', 'ire', 'inner', 'insert',
+  'not', 'no', 'nor', 'none', 'nest', 'near', 'neat', 'net', 'note', 'noise',
+  'to', 'too', 'ten', 'tent', 'test', 'tear', 'treat', 'tree', 'trail', 'train', 'tail', 'tall',
+  'rest', 'rent', 'rear', 'roar', 'roast', 'rate', 'rain', 'rail', 'real', 'reason',
+  'let', 'lane', 'lean', 'learn', 'lent', 'least', 'last', 'late', 'later', 'lion', 'line',
+  'share', 'shoe', 'shine', 'shirt', 'short', 'shore', 'sheet', 'shoot',
+  'hair', 'hall', 'halt', 'heal', 'health', 'hole', 'horn', 'host', 'hotel', 'house',
+  // Muscle-memory rhythmic builder words
+  'lesson', 'listen', 'silent', 'season', 'sensor', 'senior', 'serial',
+  'tailor', 'sailor', 'nation', 'ration', 'station', 'relation', 'rotten', 'letter',
+  'settle', 'little', 'title', 'total', 'treatise', 'retain', 'retire', 'entire'
 ];
 
 const INTERMEDIATE_SENTENCES = [
