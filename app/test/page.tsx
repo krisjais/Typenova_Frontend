@@ -232,7 +232,7 @@ export default function TestPage() {
 
             {/* Live Keyboard */}
             <div className="mt-8 transition-opacity duration-300">
-              <LiveKeyboard />
+              <LiveKeyboard active={started} />
             </div>
 
             {/* Restart hint */}

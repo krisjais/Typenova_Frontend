@@ -193,7 +193,7 @@ export default function PracticePage() {
 
         {!isComplete && (
           <div className="mt-8 transition-opacity duration-300">
-            <LiveKeyboard />
+            <LiveKeyboard active={active} />
           </div>
         )}
 

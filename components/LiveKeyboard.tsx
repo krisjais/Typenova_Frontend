@@ -75,7 +75,7 @@ const KEYBOARD_ROWS = [
   ]
 ];
 
-export default function LiveKeyboard() {
+export default function LiveKeyboard({ active }: { active?: boolean }) {
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -146,6 +146,19 @@ export default function LiveKeyboard() {
             })}
           </div>
         ))}
+      </div>
+
+      {/* Floating Hands Overlay */}
+      <div 
+        className={`absolute inset-0 z-20 pointer-events-none flex items-center justify-center mix-blend-screen transition-opacity duration-700 ease-in-out ${
+          active ? 'opacity-0 scale-95' : 'opacity-80 scale-100'
+        }`}
+      >
+        <img 
+          src="/hands.png" 
+          alt="Hands position guide" 
+          className="w-[85%] max-w-[650px] h-auto object-contain translate-y-[20px]" 
+        />
       </div>
     </div>
   );
