@@ -16,10 +16,10 @@ const KEYBOARD_ROWS = [
     { id: 'Digit0', label: '0' },
     { id: 'Minus', label: '-' },
     { id: 'Equal', label: '=' },
-    { id: 'Backspace', label: 'Backspace', width: 'w-24' },
+    { id: 'Backspace', label: 'backspace', width: 'w-[90px]' },
   ],
   [
-    { id: 'Tab', label: 'Tab', width: 'w-20' },
+    { id: 'Tab', label: 'tab', width: 'w-[70px]' },
     { id: 'KeyQ', label: 'q' },
     { id: 'KeyW', label: 'w' },
     { id: 'KeyE', label: 'e' },
@@ -35,7 +35,7 @@ const KEYBOARD_ROWS = [
     { id: 'Backslash', label: '\\', width: 'flex-1' },
   ],
   [
-    { id: 'CapsLock', label: 'Caps Lock', width: 'w-24' },
+    { id: 'CapsLock', label: 'caps', width: 'w-[85px]' },
     { id: 'KeyA', label: 'a' },
     { id: 'KeyS', label: 's' },
     { id: 'KeyD', label: 'd' },
@@ -47,10 +47,10 @@ const KEYBOARD_ROWS = [
     { id: 'KeyL', label: 'l' },
     { id: 'Semicolon', label: ';' },
     { id: 'Quote', label: '\'' },
-    { id: 'Enter', label: 'Enter', width: 'w-24' },
+    { id: 'Enter', label: 'enter', width: 'flex-1' },
   ],
   [
-    { id: 'ShiftLeft', label: 'Shift', width: 'w-32' },
+    { id: 'ShiftLeft', label: 'shift', width: 'w-[115px]' },
     { id: 'KeyZ', label: 'z' },
     { id: 'KeyX', label: 'x' },
     { id: 'KeyC', label: 'c' },
@@ -61,17 +61,17 @@ const KEYBOARD_ROWS = [
     { id: 'Comma', label: ',' },
     { id: 'Period', label: '.' },
     { id: 'Slash', label: '/' },
-    { id: 'ShiftRight', label: 'Shift', width: 'flex-1' },
+    { id: 'ShiftRight', label: 'shift', width: 'flex-1' },
   ],
   [
-    { id: 'ControlLeft', label: 'Ctrl', width: 'w-16' },
-    { id: 'MetaLeft', label: 'Win', width: 'w-16' },
-    { id: 'AltLeft', label: 'Alt', width: 'w-16' },
-    { id: 'Space', label: '', width: 'flex-1' },
-    { id: 'AltRight', label: 'Alt', width: 'w-16' },
-    { id: 'MetaRight', label: 'Win', width: 'w-16' },
-    { id: 'ContextMenu', label: 'Menu', width: 'w-16' },
-    { id: 'ControlRight', label: 'Ctrl', width: 'w-16' },
+    { id: 'ControlLeft', label: 'ctrl', width: 'w-[65px]' },
+    { id: 'MetaLeft', label: 'win', width: 'w-[65px]' },
+    { id: 'AltLeft', label: 'alt', width: 'w-[65px]' },
+    { id: 'Space', label: '', width: 'w-[325px]' },
+    { id: 'AltRight', label: 'alt', width: 'w-[65px]' },
+    { id: 'MetaRight', label: 'win', width: 'w-[65px]' },
+    { id: 'ContextMenu', label: 'menu', width: 'w-[65px]' },
+    { id: 'ControlRight', label: 'ctrl', width: 'flex-1' },
   ]
 ];
 
@@ -105,26 +105,43 @@ export default function LiveKeyboard() {
   }, []);
 
   return (
-    <div className="w-full max-w-4xl mx-auto mt-8 p-4 bg-[var(--color-bg)] rounded-2xl shadow-sm border border-white/5 opacity-80 backdrop-blur-sm transition-all duration-300">
-      <div className="flex flex-col gap-2">
+    <div className="w-full max-w-[900px] mx-auto mt-12 mb-8 p-6 md:p-8 rounded-3xl relative preserve-3d" 
+         style={{ perspective: '1000px' }}>
+      
+      {/* Container Background with Glassmorphic styling */}
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-xl rounded-[2rem] border border-white/5 
+          shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.05)] pointer-events-none" />
+
+      {/* Decorative gradient orb behind keyboard */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 
+          rounded-full bg-[var(--color-accent)] opacity-5 blur-[120px] pointer-events-none" />
+
+      <div className="relative flex flex-col gap-[6px] md:gap-[8px]">
         {KEYBOARD_ROWS.map((row, rowIndex) => (
-          <div key={rowIndex} className="flex justify-center gap-2">
+          <div key={rowIndex} className="flex justify-center gap-[6px] md:gap-[8px]">
             {row.map((k) => {
               const isActive = activeKeys.has(k.id);
               return (
-                <div
-                  key={k.id}
-                  className={`
-                    ${k.width || 'w-12'} h-12 
-                    rounded-lg flex items-center justify-center 
-                    text-sm font-semibold transition-all duration-100 ease-out
-                    ${isActive 
-                      ? 'bg-[var(--color-accent)] text-[var(--color-bg)] scale-[0.95] shadow-inner' 
-                      : 'bg-black/20 text-[var(--color-sub)] border border-white/5 shadow-sm'
-                    }
-                  `}
-                >
-                  {k.label}
+                <div key={k.id} className={`${k.width || 'w-[50px]'} relative select-none group`}>
+                  {/* The tactile key body */}
+                  <div
+                    className={`
+                      w-full h-12 md:h-14 
+                      rounded-xl flex items-center justify-center 
+                      text-[13px] tracking-wider uppercase font-semibold
+                      transition-all duration-[50ms] ease-out
+                      ${isActive 
+                        ? 'translate-y-[4px] bg-[var(--color-accent)] text-[var(--color-bg)] shadow-[0_0_24px_rgba(var(--color-accent-rgb),0.5)] z-10' 
+                        : 'bg-gradient-to-b from-[rgba(255,255,255,0.05)] to-[rgba(255,255,255,0.01)] text-[var(--color-sub)] border-t border-[rgba(255,255,255,0.05)] shadow-[0_4px_0_rgba(0,0,0,0.6),0_5px_8px_rgba(0,0,0,0.5)] hover:from-[rgba(255,255,255,0.08)] hover:to-[rgba(255,255,255,0.03)]'
+                      }
+                    `}
+                    style={{
+                      // Custom inline glowing effect for active keys if the CSS variable approach is tricky with box-shadow
+                      boxShadow: isActive ? '0 0 16px var(--color-accent), 0 0px 0px rgba(0,0,0,0)' : undefined
+                    }}
+                  >
+                    {k.label}
+                  </div>
                 </div>
               );
             })}
