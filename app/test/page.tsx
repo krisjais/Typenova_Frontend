@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLevel } from '@/context/LevelContext';
 import { RotateCcw } from 'lucide-react';
 import FontSizeControl, { useFontSize } from '@/components/FontSizeControl';
+import LiveKeyboard from '@/components/LiveKeyboard';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -218,6 +219,11 @@ export default function TestPage() {
 
             {/* Typing area */}
             <TypingArea text={text} typed={typed} onType={handleType} active={!finished} fontSize={fontSize} />
+
+            {/* Live Keyboard */}
+            <div className="mt-8 transition-opacity duration-300">
+              <LiveKeyboard />
+            </div>
 
             {/* Restart hint */}
             <div className="flex justify-center mt-6">

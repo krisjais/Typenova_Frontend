@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLevel } from '@/context/LevelContext';
 import { RotateCcw } from 'lucide-react';
 import FontSizeControl, { useFontSize } from '@/components/FontSizeControl';
+import LiveKeyboard from '@/components/LiveKeyboard';
 
 export default function PracticePage() {
   const { user } = useAuth();
@@ -181,6 +182,12 @@ export default function PracticePage() {
                 </button>
               )}
             </div>
+          </div>
+        )}
+
+        {!isComplete && (
+          <div className="mt-8 transition-opacity duration-300">
+            <LiveKeyboard />
           </div>
         )}
 
