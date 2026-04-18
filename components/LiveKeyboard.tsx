@@ -105,7 +105,7 @@ export default function LiveKeyboard() {
   }, []);
 
   return (
-    <div className="w-full max-w-[900px] mx-auto mt-12 mb-8 p-6 md:p-8 rounded-3xl relative preserve-3d" 
+    <div className="w-full max-w-[850px] mx-auto mt-6 mb-2 p-5 md:px-8 md:py-6 rounded-3xl relative preserve-3d transition-transform duration-300" 
          style={{ perspective: '1000px' }}>
       
       {/* Container Background with Glassmorphic styling */}
@@ -114,7 +114,7 @@ export default function LiveKeyboard() {
 
       {/* Decorative gradient orb behind keyboard */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 
-          rounded-full bg-[var(--color-accent)] opacity-5 blur-[120px] pointer-events-none" />
+          rounded-full bg-[var(--color-accent)] opacity-5 blur-[100px] pointer-events-none" />
 
       <div className="relative flex flex-col gap-[6px] md:gap-[8px]">
         {KEYBOARD_ROWS.map((row, rowIndex) => (
@@ -122,13 +122,13 @@ export default function LiveKeyboard() {
             {row.map((k) => {
               const isActive = activeKeys.has(k.id);
               return (
-                <div key={k.id} className={`${k.width || 'w-[50px]'} relative select-none group`}>
+                <div key={k.id} className={`${k.width || 'w-[46px]'} relative select-none group`}>
                   {/* The tactile key body */}
                   <div
                     className={`
-                      w-full h-12 md:h-14 
+                      w-full h-[44px] md:h-[50px]
                       rounded-xl flex items-center justify-center 
-                      text-[13px] tracking-wider uppercase font-semibold
+                      text-[12px] md:text-[13px] tracking-wider uppercase font-semibold
                       transition-all duration-[50ms] ease-out
                       ${isActive 
                         ? 'translate-y-[4px] bg-[var(--color-accent)] text-[var(--color-bg)] shadow-[0_0_24px_rgba(var(--color-accent-rgb),0.5)] z-10' 
@@ -136,7 +136,6 @@ export default function LiveKeyboard() {
                       }
                     `}
                     style={{
-                      // Custom inline glowing effect for active keys if the CSS variable approach is tricky with box-shadow
                       boxShadow: isActive ? '0 0 16px var(--color-accent), 0 0px 0px rgba(0,0,0,0)' : undefined
                     }}
                   >

@@ -144,14 +144,14 @@ export default function TestPage() {
         {!finished ? (
           <>
             {/* Toolbar */}
-            <div className="flex items-center justify-center gap-1 mb-10 flex-wrap">
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
               {/* Mode toggle */}
-              <div className="flex rounded-lg overflow-hidden mr-3" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <div className="flex rounded-full p-1 bg-black/20 border border-white/5 backdrop-blur-sm shadow-sm">
                 {(['time', 'words'] as TestMode[]).map((m) => (
                   <button
                     key={m}
                     onClick={() => setMode(m)}
-                    className="px-4 py-1.5 text-xs font-medium transition-all capitalize"
+                    className={`px-4 py-1.5 text-[11px] font-semibold tracking-widest capitalize rounded-full transition-all ${mode === m ? 'shadow-md' : 'hover:bg-white/10'}`}
                     style={{
                       background: mode === m ? 'var(--color-accent)' : 'transparent',
                       color: mode === m ? '#fff' : 'var(--color-sub)',
@@ -163,17 +163,17 @@ export default function TestPage() {
               </div>
 
               {/* Options */}
-              <div className="flex gap-1">
+              <div className="flex rounded-full p-1 bg-black/20 border border-white/5 backdrop-blur-sm shadow-sm gap-1">
                 {(mode === 'time' ? TIME_OPTIONS : WORD_OPTIONS).map((opt) => {
                   const active = mode === 'time' ? opt === timeDuration : opt === wordCount;
                   return (
                     <button
                       key={opt}
                       onClick={() => mode === 'time' ? setTimeDuration(opt) : setWordCount(opt)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                      className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all ${active ? '' : 'hover:bg-white/10'}`}
                       style={{
                         color: active ? 'var(--color-accent)' : 'var(--color-sub)',
-                        background: active ? 'rgba(99,102,241,0.12)' : 'transparent',
+                        background: active ? 'rgba(var(--color-accent-rgb), 0.15)' : 'transparent',
                       }}
                     >
                       {opt}
@@ -184,35 +184,45 @@ export default function TestPage() {
 
               {/* Level badge */}
               {badge && (
-                <span className="ml-3 text-xs opacity-40">{badge} {level && LEVEL_THRESHOLDS[level].label}</span>
+                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm shadow-sm">
+                  <span className="text-[12px]">{badge}</span>
+                  <span className="text-[11px] font-semibold tracking-widest uppercase opacity-80" style={{ color: 'var(--color-text)' }}>
+                    {level && LEVEL_THRESHOLDS[level].label}
+                  </span>
+                </div>
               )}
 
               {/* Font size */}
-              <div className="ml-3">
+              <div className="flex items-center h-[34px] px-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm shadow-sm">
                 <FontSizeControl size={fontSize} increase={increase} decrease={decrease} />
               </div>
             </div>
 
             {/* Live stats */}
-            <div className="flex justify-center gap-10 mb-6">
-              <div className="text-center">
-                <div className="text-4xl font-bold" style={{ color: 'var(--color-accent)' }}>
-                  {started ? wpm : '—'}
+            <div className="flex justify-center gap-3 sm:gap-6 mb-10">
+              <div className="flex flex-col items-center justify-center w-[90px] sm:w-[110px] h-[75px] sm:h-[85px] rounded-2xl bg-black/20 border border-white/5 backdrop-blur-md shadow-lg transition-transform hover:scale-105 duration-200"
+                   style={{ borderBottom: started ? '2px solid var(--color-accent)' : '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight" style={{ color: started ? 'var(--color-accent)' : 'var(--color-sub)' }}>
+                  {started ? wpm : '0'}
                 </div>
-                <div className="text-xs mt-1" style={{ color: 'var(--color-sub)' }}>wpm</div>
+                <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] mt-1" style={{ color: 'var(--color-sub)' }}>wpm</div>
               </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold" style={{ color: started ? (accuracy >= 90 ? '#22c55e' : '#f59e0b') : 'var(--color-sub)' }}>
-                  {started ? `${accuracy}%` : '—'}
+
+              <div className="flex flex-col items-center justify-center w-[90px] sm:w-[110px] h-[75px] sm:h-[85px] rounded-2xl bg-black/20 border border-white/5 backdrop-blur-md shadow-lg transition-transform hover:scale-105 duration-200"
+                   style={{ borderBottom: started && accuracy >= 90 ? '2px solid #22c55e' : started && accuracy < 90 ? '2px solid #f59e0b' : '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight" style={{ color: started ? (accuracy >= 90 ? '#22c55e' : '#f59e0b') : 'var(--color-sub)' }}>
+                  {started ? `${accuracy}%` : '0%'}
                 </div>
-                <div className="text-xs mt-1" style={{ color: 'var(--color-sub)' }}>acc</div>
+                <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] mt-1" style={{ color: 'var(--color-sub)' }}>acc</div>
               </div>
+
               {mode === 'time' && (
-                <div className="text-center">
-                  <div className="text-4xl font-bold" style={{ color: timeLeft <= 5 ? '#ef4444' : 'var(--color-text)' }}>
+                <div className="flex flex-col items-center justify-center w-[90px] sm:w-[110px] h-[75px] sm:h-[85px] rounded-2xl bg-black/20 border border-white/5 backdrop-blur-md shadow-lg transition-transform hover:scale-105 duration-200"
+                     style={{ borderBottom: timeLeft <= 5 ? '2px solid #ef4444' : '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight" style={{ color: timeLeft <= 5 ? '#ef4444' : 'var(--color-text)' }}>
                     {timeLeft}
                   </div>
-                  <div className="text-xs mt-1" style={{ color: 'var(--color-sub)' }}>time</div>
+                  <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] mt-1" style={{ color: 'var(--color-sub)' }}>time</div>
                 </div>
               )}
             </div>
