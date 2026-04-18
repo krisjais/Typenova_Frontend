@@ -69,39 +69,53 @@ const BEGINNER_WORDS = [
   'settle', 'little', 'title', 'total', 'treatise', 'retain', 'retire', 'entire'
 ];
 
-const INTERMEDIATE_SENTENCES = [
-  'The quick brown fox jumps over the lazy dog near the river bank.',
-  'Practice makes perfect when you dedicate time every single day.',
-  'Learning to type faster requires focus accuracy and consistency.',
-  'She opened the window and felt the cool breeze on her face.',
-  'The developer wrote clean code that was easy to read and maintain.',
-  'Every great journey begins with a single determined step forward.',
-  'The morning sun cast long shadows across the empty city streets.',
-  'He carefully reviewed the document before submitting it online.',
-  'Technology continues to reshape the way we communicate and work.',
-  'The team worked together to solve the complex problem efficiently.',
+const INTERMEDIATE_WORDS = [
+  // Expands to the entire core keyboard, adding reaches like: d, u, c, y, p, m, g, b, w, k, f, v
+  'public', 'become', 'game', 'much', 'found', 'black', 'could', 'would', 'quick',
+  'people', 'place', 'water', 'write', 'board', 'word', 'work', 'part', 'place',
+  'made', 'make', 'like', 'look', 'time', 'more', 'some', 'come', 'number', 'sound',
+  'most', 'know', 'over', 'down', 'only', 'very', 'good', 'think', 'after', 'thing',
+  'great', 'where', 'help', 'through', 'much', 'before', 'line', 'right', 'means',
+  'old', 'any', 'same', 'tell', 'boy', 'follow', 'came', 'want', 'show', 'also',
+  'form', 'three', 'small', 'set', 'put', 'end', 'does', 'another', 'well', 'large',
+  'must', 'big', 'even', 'such', 'because', 'turn', 'here', 'why', 'ask', 'went',
+  // Specific words to drill new keys heavily:
+  'copy', 'camp', 'away', 'company', 'page', 'power', 'perhaps', 'pace', 'pick',
+  'way', 'play', 'away', 'always', 'today', 'say', 'may', 'day', 'system', 'type'
 ];
 
-const PRO_PARAGRAPHS = [
-  'Asynchronous programming allows multiple operations to execute concurrently without blocking the main thread, significantly improving application performance and user experience in modern web development.',
-  'The Byzantine Generals Problem illustrates the challenge of achieving consensus in distributed systems where some components may fail or act maliciously, forming the theoretical basis for blockchain technology.',
-  'Quantum entanglement describes a phenomenon where two particles become correlated such that the quantum state of each cannot be described independently, regardless of the distance separating them.',
-  'The Turing completeness of a computational system implies that it can simulate any Turing machine, meaning it can compute anything that is theoretically computable given sufficient time and memory.',
-  'Polymorphism in object-oriented programming enables objects of different types to be treated as instances of the same base type, allowing for flexible and extensible software architecture design patterns.',
+const PRO_WORDS = [
+  // The gauntlet: Full alphabet (specifically targeting z, x, j, q), advanced tech words, and tough patterns
+  'javascript', 'function', 'object', 'array', 'string', 'boolean', 'undefined',
+  'promise', 'async', 'await', 'component', 'interface', 'variable', 'dynamic',
+  'export', 'import', 'default', 'return', 'console', 'window', 'document',
+  'execute', 'query', 'syntax', 'context', 'module', 'package', 'version',
+  'project', 'equal', 'require', 'complex', 'quality', 'example', 'zero',
+  'analyze', 'maximize', 'optimize', 'visualize', 'recognize', 'organize',
+  'subject', 'reject', 'inject', 'adjust', 'justify', 'judge', 'major', 'majority',
+  'objective', 'subjective', 'quick', 'quiet', 'quite', 'query', 'queue', 'unique',
+  'acquire', 'expect', 'except', 'explain', 'experience', 'experiment', 'explore',
+  'extend', 'exact', 'examine', 'exist', 'exit', 'index', 'matrix', 'pixel', 'proxy'
 ];
 
 export function getTextForLevel(level: Level, count = 40): string {
+  let pool: string[];
   switch (level) {
     case 'beginner':
-      return Array.from(
-        { length: count },
-        () => BEGINNER_WORDS[Math.floor(Math.random() * BEGINNER_WORDS.length)]
-      ).join(' ');
+      pool = BEGINNER_WORDS;
+      break;
     case 'intermediate':
-      return INTERMEDIATE_SENTENCES[Math.floor(Math.random() * INTERMEDIATE_SENTENCES.length)];
+      pool = INTERMEDIATE_WORDS;
+      break;
     case 'pro':
-      return PRO_PARAGRAPHS[Math.floor(Math.random() * PRO_PARAGRAPHS.length)];
+      pool = PRO_WORDS;
+      break;
   }
+  
+  return Array.from(
+    { length: count },
+    () => pool[Math.floor(Math.random() * pool.length)]
+  ).join(' ');
 }
 
 /** Generate practice text targeting weak keys */
@@ -113,7 +127,10 @@ export function generateWeakKeyPractice(weakKeys: string[]): string {
 }
 
 export function getRandomParagraph(): string {
-  return INTERMEDIATE_SENTENCES[Math.floor(Math.random() * INTERMEDIATE_SENTENCES.length)];
+  return Array.from(
+    { length: 20 },
+    () => INTERMEDIATE_WORDS[Math.floor(Math.random() * INTERMEDIATE_WORDS.length)]
+  ).join(' ');
 }
 
 export function getRandomWords(count = 40): string {

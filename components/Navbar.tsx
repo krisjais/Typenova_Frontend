@@ -133,9 +133,17 @@ export default function Navbar() {
       </div>
 
       {showTheme && (
-        <div className="absolute top-14 right-4">
-          <ThemePicker onClose={() => setShowTheme(false)} />
-        </div>
+        <>
+          {/* Click-outside overlay */}
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setShowTheme(false)}
+            aria-hidden="true"
+          />
+          <div className="absolute top-14 right-4 z-50">
+            <ThemePicker onClose={() => setShowTheme(false)} />
+          </div>
+        </>
       )}
     </nav>
   );
