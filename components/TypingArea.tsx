@@ -20,14 +20,25 @@ export default function TypingArea({ text, typed, onType, active, practiceMode =
     if (active) inputRef.current?.focus();
   }, [active]);
 
+  // Reset scroll when text changes (new session)
+  useEffect(() => {
+    if (containerRef.current) containerRef.current.scrollTop = 0;
+  }, [text]);
+
   // Scroll active word into view (keep on row 2)
   useEffect(() => {
     if (!containerRef.current || !activeWordRef.current) return;
     const container = containerRef.current;
     const word = activeWordRef.current;
     const lineH = word.offsetHeight;
-    if (word.offsetTop > lineH * 1.5) {
+    
+    // Scroll down if caret moves below line 2
+    if (word.offsetTop > container.scrollTop + lineH * 1.5) {
       container.scrollTop = word.offsetTop - lineH;
+    }
+    // Scroll up if caret moves above current view (e.g. holding backspace)
+    else if (word.offsetTop < container.scrollTop) {
+      container.scrollTop = word.offsetTop;
     }
   }, [typed]);
 
