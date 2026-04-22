@@ -30,7 +30,7 @@ export default function TypingArea({ text, typed, onType, active, practiceMode =
     };
     window.addEventListener('keydown', handleKey);
     window.addEventListener('keyup', handleKey);
-    window.addEventListener('mousedown', handleKey); 
+    window.addEventListener('mousedown', handleKey);
     return () => {
       window.removeEventListener('keydown', handleKey);
       window.removeEventListener('keyup', handleKey);
