@@ -24,7 +24,18 @@ export function LevelProvider({ children }: { children: ReactNode }) {
     api.getLevel()
       .then((d) => {
         const l = (d as { level: Level | null }).level;
-        setLevelState(l);
+        if (l) {
+          setLevelState(l);
+        } else {
+          // Fallback to local storage if API is null (e.g. first time but saved locally)
+          const saved = localStorage.getItem('level') as Level | null;
+          if (saved) {
+            setLevelState(saved);
+            api.setLevel({ level: saved }).catch(() => {});
+          } else {
+            setLevelState(null);
+          }
+        }
       })
       .catch(() => {
         // fallback to localStorage
@@ -37,6 +48,9 @@ export function LevelProvider({ children }: { children: ReactNode }) {
   const setLevel = (l: Level) => {
     setLevelState(l);
     localStorage.setItem('level', l);
+    if (user) {
+      api.setLevel({ level: l }).catch(() => {});
+    }
   };
 
   const checkAndPromote = (recentWpms: number[]): Level | null => {
