@@ -28,6 +28,25 @@ export default function PracticePage() {
     reset();
   }, [effectiveLevel]);
 
+  // Stop timer when switching tabs
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      } else {
+        if (active && !isComplete && intervalRef.current === null) {
+          intervalRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [active, isComplete]);
+
   // Tab to restart
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
