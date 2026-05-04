@@ -43,8 +43,26 @@ export default function Navbar() {
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 h-14"
       style={{ background: theme.background + 'cc', backdropFilter: 'blur(16px)' }}
     >
-      <Link href="/" className="text-lg font-bold tracking-tight" style={{ color: 'var(--color-accent)' }}>
-        TypeNova
+      <Link href="/" className="flex items-center gap-2 group select-none">
+        {/* Icon mark: keyboard key with lightning */}
+        <div
+          className="flex items-center justify-center w-8 h-8 rounded-lg transition-transform duration-200 group-hover:scale-105"
+          style={{
+            background: 'linear-gradient(135deg, var(--color-accent) 0%, #a855f7 100%)',
+            boxShadow: '0 2px 12px rgba(99,102,241,0.45)',
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            {/* Keyboard key outline */}
+            <rect x="1.5" y="3.5" width="15" height="11" rx="2" stroke="rgba(255,255,255,0.35)" strokeWidth="1" fill="none" />
+            {/* Lightning bolt */}
+            <path d="M10.2 4.5L7 9.5h3.5L8.8 13.5l5-6H10l1.5-3z" fill="white" opacity="0.95" />
+          </svg>
+        </div>
+        {/* Wordmark */}
+        <span className="text-[15px] font-bold tracking-tight" style={{ color: 'var(--color-text)' }}>
+          Type<span style={{ color: 'var(--color-accent)' }}>Nova</span>
+        </span>
       </Link>
 
       <div className="flex items-center gap-1 text-xs">
