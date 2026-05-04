@@ -46,7 +46,7 @@ export default function TestPage() {
 
   // Generate text
   const generateText = useCallback(() => {
-    const count = mode === 'words' ? wordCount : 80;
+    const count = mode === 'words' ? wordCount : 40;
     return getTextForLevel(effectiveLevel, count);
   }, [mode, wordCount, effectiveLevel]);
 
