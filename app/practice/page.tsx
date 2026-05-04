@@ -29,6 +29,13 @@ export default function PracticePage() {
     reset();
   }, [effectiveLevel]);
 
+  const typedChars = [...typed];
+  const correctCount = typedChars.filter((c, i) => c === text[i]).length;
+  const wpm = calcWPM(correctCount, elapsed);
+  const accuracy = calcAccuracy(correctCount, typed.length);
+  const errors = typedChars.filter((c, i) => c !== text[i]).length;
+  const isComplete = typed.length >= text.length;
+
   // Stop timer when switching tabs
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -56,13 +63,6 @@ export default function PracticePage() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
-
-  const typedChars = [...typed];
-  const correctCount = typedChars.filter((c, i) => c === text[i]).length;
-  const wpm = calcWPM(correctCount, elapsed);
-  const accuracy = calcAccuracy(correctCount, typed.length);
-  const errors = typedChars.filter((c, i) => c !== text[i]).length;
-  const isComplete = typed.length >= text.length;
 
   useEffect(() => {
     if (active && !isComplete) {
