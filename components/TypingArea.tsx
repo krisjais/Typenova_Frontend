@@ -15,10 +15,33 @@ export default function TypingArea({ text, typed, onType, active, practiceMode =
   const containerRef = useRef<HTMLDivElement>(null);
   const activeWordRef = useRef<HTMLSpanElement>(null);
   const [focused, setFocused] = useState(false);
+  const [capsLockActive, setCapsLockActive] = useState(false);
 
   useEffect(() => {
     if (active) inputRef.current?.focus();
   }, [active]);
+
+  // Track CapsLock state globally
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent | MouseEvent) => {
+      if (e instanceof KeyboardEvent || e instanceof MouseEvent) {
+        setCapsLockActive(e.getModifierState('CapsLock'));
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    window.addEventListener('keyup', handleKey);
+    window.addEventListener('mousedown', handleKey);
+    return () => {
+      window.removeEventListener('keydown', handleKey);
+      window.removeEventListener('keyup', handleKey);
+      window.removeEventListener('mousedown', handleKey);
+    };
+  }, []);
+
+  // Reset scroll when text changes (new session)
+  useEffect(() => {
+    if (containerRef.current) containerRef.current.scrollTop = 0;
+  }, [text]);
 
   // Scroll active word into view (keep on row 2)
   useEffect(() => {
@@ -26,8 +49,14 @@ export default function TypingArea({ text, typed, onType, active, practiceMode =
     const container = containerRef.current;
     const word = activeWordRef.current;
     const lineH = word.offsetHeight;
-    if (word.offsetTop > lineH * 1.5) {
+    
+    // Scroll down if caret moves below line 2
+    if (word.offsetTop > container.scrollTop + lineH * 1.5) {
       container.scrollTop = word.offsetTop - lineH;
+    }
+    // Scroll up if caret moves above current view (e.g. holding backspace)
+    else if (word.offsetTop < container.scrollTop) {
+      container.scrollTop = word.offsetTop;
     }
   }, [typed]);
 
@@ -79,6 +108,13 @@ export default function TypingArea({ text, typed, onType, active, practiceMode =
       className="relative select-none cursor-text"
       onClick={() => inputRef.current?.focus()}
     >
+      {capsLockActive && focused && (
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[var(--color-error)]/10 text-[var(--color-error)] px-4 py-1.5 rounded-full text-[13px] font-semibold border border-[var(--color-error)]/20 backdrop-blur-md z-20 shadow-lg tracking-wide">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          Caps Lock is ON
+        </div>
+      )}
+
       {!focused && (
         <div
           className="absolute inset-0 z-10 flex items-center justify-center rounded-xl"

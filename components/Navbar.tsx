@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ThemePicker from './ThemePicker';
 
 const NAV_LINKS = [
@@ -18,6 +18,25 @@ export default function Navbar() {
   const { theme } = useTheme();
   const pathname = usePathname();
   const [showTheme, setShowTheme] = useState(false);
+  const themeRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        themeRef.current && !themeRef.current.contains(event.target as Node) &&
+        buttonRef.current && !buttonRef.current.contains(event.target as Node)
+      ) {
+        setShowTheme(false);
+      }
+    };
+    if (showTheme) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showTheme]);
 
   return (
     <nav
@@ -64,6 +83,7 @@ export default function Navbar() {
 
         {/* Theme button */}
         <button
+          ref={buttonRef}
           onClick={() => setShowTheme(!showTheme)}
           className="group relative flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 hover:scale-110"
           style={{
@@ -133,7 +153,7 @@ export default function Navbar() {
       </div>
 
       {showTheme && (
-        <div className="absolute top-14 right-4">
+        <div ref={themeRef} className="absolute top-14 right-4 z-50">
           <ThemePicker onClose={() => setShowTheme(false)} />
         </div>
       )}
