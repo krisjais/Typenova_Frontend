@@ -46,7 +46,7 @@ export default function TestPage() {
 
   // Generate text
   const generateText = useCallback(() => {
-    const count = mode === 'words' ? wordCount : 80;
+    const count = mode === 'words' ? wordCount : 40;
     return getTextForLevel(effectiveLevel, count);
   }, [mode, wordCount, effectiveLevel]);
 
@@ -108,6 +108,41 @@ export default function TestPage() {
       }).catch(console.error);
     }
   }, [finished]);
+
+  // Pause timer when switching tabs
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      } else {
+        if (started && !finished && intervalRef.current === null) {
+          intervalRef.current = setInterval(() => {
+            elapsedRef.current += 1;
+            const currentCorrect = typed.split('').filter((c, i) => c === text[i]).length;
+            const currentWpm = calcWPM(currentCorrect, elapsedRef.current);
+            setWpmHistory((h) => [...h, { t: elapsedRef.current, wpm: currentWpm }]);
+            if (mode === 'time') {
+              setTimeLeft((t) => {
+                if (t <= 1) {
+                  clearInterval(intervalRef.current!);
+                  intervalRef.current = null;
+                  setFinished(true);
+                  return 0;
+                }
+                return t - 1;
+              });
+            }
+          }, 1000);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [started, finished, mode, typed, text]);
 
   // Tab to restart
   useEffect(() => {

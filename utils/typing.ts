@@ -98,7 +98,7 @@ const PRO_WORDS = [
   'extend', 'exact', 'examine', 'exist', 'exit', 'index', 'matrix', 'pixel', 'proxy'
 ];
 
-export function getTextForLevel(level: Level, count = 40): string {
+export function getTextForLevel(level: Level, count = 25): string {
   let pool: string[];
   switch (level) {
     case 'beginner':
@@ -123,7 +123,7 @@ export function generateWeakKeyPractice(weakKeys: string[]): string {
   if (!weakKeys.length) return getTextForLevel('beginner');
   const words = BEGINNER_WORDS.filter((w) => weakKeys.some((k) => w.includes(k)));
   const pool = words.length > 5 ? words : BEGINNER_WORDS;
-  return Array.from({ length: 30 }, () => pool[Math.floor(Math.random() * pool.length)]).join(' ');
+  return Array.from({ length: 20 }, () => pool[Math.floor(Math.random() * pool.length)]).join(' ');
 }
 
 export function getRandomParagraph(): string {
