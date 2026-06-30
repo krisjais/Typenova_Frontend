@@ -2,25 +2,44 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@/context/ThemeContext';
 import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import {
+  Keyboard,
+  Gauge,
+  BarChart3,
+  Trophy,
+  Gamepad2,
+  Palette,
+  LogOut,
+  User,
+  Menu,
+  X,
+} from 'lucide-react';
 import ThemePicker from './ThemePicker';
+import Logo from './Logo';
 
 const NAV_LINKS = [
-  { href: '/practice', label: 'practice' },
-  { href: '/test', label: 'test' },
-  { href: '/dashboard', label: 'dashboard' },
-  { href: '/leaderboard', label: 'leaderboard' },
+  { href: '/practice', label: 'Practice', icon: Keyboard },
+  { href: '/test', label: 'Test', icon: Gauge },
+  { href: '/games', label: 'Games', icon: Gamepad2 },
+  { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
+  { href: '/leaderboard', label: 'Board', icon: Trophy },
 ];
 
 export default function Navbar() {
   const { user, logout } = useAuth();
-  const { theme } = useTheme();
   const pathname = usePathname();
   const [showTheme, setShowTheme] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const themeRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
+  const { scrollY } = useScroll();
+  const navPadding = useTransform(scrollY, [0, 80], [12, 6]);
+  const navScale = useTransform(scrollY, [0, 80], [1, 0.98]);
+
+  // Close theme picker on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -33,148 +52,203 @@ export default function Navbar() {
     if (showTheme) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showTheme]);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Don't show navbar on landing page
+  const isLanding = pathname === '/';
+
   return (
-    <nav
-      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 h-14"
-      style={{ background: theme.background + 'cc', backdropFilter: 'blur(16px)' }}
-    >
-      <Link href="/" className="flex items-center gap-2 group select-none">
-        {/* Icon mark: keyboard key with lightning */}
-        <div
-          className="flex items-center justify-center w-8 h-8 rounded-lg transition-transform duration-200 group-hover:scale-105"
-          style={{
-            background: 'linear-gradient(135deg, var(--color-accent) 0%, #a855f7 100%)',
-            boxShadow: '0 2px 12px rgba(99,102,241,0.45)',
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            {/* Keyboard key outline */}
-            <rect x="1.5" y="3.5" width="15" height="11" rx="2" stroke="rgba(255,255,255,0.35)" strokeWidth="1" fill="none" />
-            {/* Lightning bolt */}
-            <path d="M10.2 4.5L7 9.5h3.5L8.8 13.5l5-6H10l1.5-3z" fill="white" opacity="0.95" />
-          </svg>
-        </div>
-        {/* Wordmark */}
-        <span className="text-[15px] font-bold tracking-tight" style={{ color: 'var(--color-text)' }}>
-          Type<span style={{ color: 'var(--color-accent)' }}>Nova</span>
-        </span>
-      </Link>
+    <>
+      <motion.nav
+        style={{ padding: navPadding, scale: navScale }}
+        className={`fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-3 ${isLanding ? 'pt-4' : ''}`}
+      >
+        <div className="w-full max-w-5xl">
+          <div className="flex items-center justify-between px-4 md:px-6 py-2.5 rounded-2xl glass shadow-lg shadow-black/20">
+            {/* Logo */}
+            <Link href="/" className="group select-none shrink-0">
+              <Logo layout="horizontal" size={26} />
+            </Link>
 
-      <div className="flex items-center gap-1 text-xs">
-        {NAV_LINKS.map(({ href, label }) => {
-          const isActive = pathname === href;
-          return (
-            <Link
-              key={href}
-              href={href}
-              className="relative px-3 py-1.5 rounded-lg transition-all duration-200"
-              style={{
-                color: isActive ? 'var(--color-accent)' : 'var(--color-sub)',
-                background: isActive ? 'rgba(99,102,241,0.12)' : 'transparent',
-                fontWeight: isActive ? 600 : 400,
-              }}
-            >
-              {label}
-              {/* Active underline bar */}
-              {isActive && (
-                <span
-                  className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full"
-                  style={{
-                    width: '60%',
-                    height: 2,
-                    background: 'var(--color-accent)',
-                    boxShadow: '0 0 6px var(--color-accent)',
-                  }}
-                />
+            {/* Desktop Nav Links */}
+            <div className="hidden md:flex items-center gap-1 relative">
+              {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+                const isActive = pathname === href;
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="relative px-3.5 py-2 rounded-xl flex items-center gap-2 text-[13px] font-medium transition-colors duration-200"
+                    style={{
+                      color: isActive ? 'var(--color-text)' : 'var(--color-text-secondary)',
+                    }}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="nav-active"
+                        className="absolute inset-0 rounded-xl"
+                        style={{ background: 'var(--color-accent-muted)' }}
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-2">
+                      <Icon size={15} strokeWidth={isActive ? 2.2 : 1.8} />
+                      {label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Right Side */}
+            <div className="flex items-center gap-2">
+              {/* Theme Button */}
+              <button
+                ref={buttonRef}
+                onClick={() => setShowTheme(!showTheme)}
+                className="relative flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 hover:bg-white/[0.06]"
+                style={{
+                  background: showTheme ? 'var(--color-accent-muted)' : 'transparent',
+                  color: showTheme ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                }}
+                title="Theme"
+              >
+                <Palette size={16} strokeWidth={1.8} />
+              </button>
+
+              {/* Auth Buttons */}
+              {user ? (
+                <div className="hidden md:flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.04]">
+                    <User size={13} className="text-[var(--color-text-secondary)]" />
+                    <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">
+                      {user.username}
+                    </span>
+                  </div>
+                  <button
+                    onClick={logout}
+                    className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors hover:bg-white/[0.06] text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
+                    title="Logout"
+                  >
+                    <LogOut size={15} strokeWidth={1.8} />
+                  </button>
+                </div>
+              ) : (
+                <div className="hidden md:flex items-center gap-2">
+                  <Link
+                    href="/login"
+                    className="px-3.5 py-1.5 rounded-lg text-[13px] font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="px-4 py-1.5 rounded-lg text-[13px] font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors shadow-sm shadow-[var(--color-accent)]/20"
+                  >
+                    Sign Up
+                  </Link>
+                </div>
               )}
-            </Link>
-          );
-        })}
 
-        {/* Divider */}
-        <span className="mx-2 opacity-10 select-none">|</span>
-
-        {/* Theme button */}
-        <button
-          ref={buttonRef}
-          onClick={() => setShowTheme(!showTheme)}
-          className="group relative flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 hover:scale-110"
-          style={{
-            background: showTheme ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.06)',
-            border: `1px solid ${showTheme ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.1)'}`,
-          }}
-          title="Theme"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-            <defs>
-              <linearGradient id="themeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#6366f1" />
-                <stop offset="50%" stopColor="#a855f7" />
-                <stop offset="100%" stopColor="#ec4899" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10 1.1 0 2-.9 2-2 0-.53-.2-1.01-.52-1.38-.31-.36-.49-.83-.49-1.32 0-1.1.9-2 2-2h2.36c3.1 0 5.65-2.55 5.65-5.65C23 6.1 18.03 2 12 2z"
-              fill="url(#themeGrad)"
-              opacity="0.9"
-            />
-            <circle cx="6.5" cy="11.5" r="1.5" fill="#fff" opacity="0.9" />
-            <circle cx="9.5" cy="7.5" r="1.5" fill="#fff" opacity="0.9" />
-            <circle cx="14.5" cy="7.5" r="1.5" fill="#fff" opacity="0.9" />
-            <circle cx="17.5" cy="11.5" r="1.5" fill="#fff" opacity="0.9" />
-          </svg>
-          {showTheme && (
-            <span
-              className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
-              style={{ background: 'var(--color-accent)' }}
-            />
-          )}
-        </button>
-
-        {/* Divider */}
-        <span className="mx-2 opacity-10 select-none">|</span>
-
-        {user ? (
-          <div className="flex items-center gap-3">
-            <span className="opacity-40 text-xs">{user.username}</span>
-            <button
-              onClick={logout}
-              className="px-3 py-1.5 rounded-lg text-xs transition-all duration-200 hover:text-white"
-              style={{ color: 'var(--color-sub)' }}
-            >
-              logout
-            </button>
+              {/* Mobile Menu Toggle */}
+              <button
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg hover:bg-white/[0.06] text-[var(--color-text-secondary)]"
+              >
+                {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+              </button>
+            </div>
           </div>
-        ) : (
-          <div className="flex gap-2">
-            <Link
-              href="/login"
-              className="px-3 py-1.5 rounded-lg text-xs transition-all duration-200 hover:text-white"
-              style={{ color: 'var(--color-sub)' }}
-            >
-              login
-            </Link>
-            <Link
-              href="/signup"
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition hover:opacity-90"
-              style={{ background: 'var(--color-accent)', color: '#fff' }}
-            >
-              sign up
-            </Link>
-          </div>
-        )}
-      </div>
-
-      {showTheme && (
-        <div ref={themeRef} className="absolute top-14 right-4 z-50">
-          <ThemePicker onClose={() => setShowTheme(false)} />
         </div>
-      )}
-    </nav>
+      </motion.nav>
+
+      {/* Theme Picker Dropdown */}
+      <AnimatePresence>
+        {showTheme && (
+          <motion.div
+            ref={themeRef}
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="fixed top-[72px] right-4 md:right-[calc(50%-280px)] z-50"
+          >
+            <ThemePicker onClose={() => setShowTheme(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-[68px] left-4 right-4 z-50 p-2 rounded-2xl glass shadow-xl shadow-black/30 md:hidden"
+          >
+            <div className="flex flex-col gap-1">
+              {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+                const isActive = pathname === href;
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-colors"
+                    style={{
+                      background: isActive ? 'var(--color-accent-muted)' : 'transparent',
+                      color: isActive ? 'var(--color-text)' : 'var(--color-text-secondary)',
+                    }}
+                  >
+                    <Icon size={18} strokeWidth={isActive ? 2.2 : 1.8} />
+                    {label}
+                  </Link>
+                );
+              })}
+
+              <div className="h-px bg-[var(--color-border)] my-1" />
+
+              {user ? (
+                <>
+                  <div className="flex items-center gap-3 px-4 py-3 text-[14px] text-[var(--color-text-secondary)]">
+                    <User size={18} strokeWidth={1.8} />
+                    {user.username}
+                  </div>
+                  <button
+                    onClick={logout}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] text-[var(--color-text-secondary)] hover:bg-white/[0.04] transition-colors"
+                  >
+                    <LogOut size={18} strokeWidth={1.8} />
+                    Log out
+                  </button>
+                </>
+              ) : (
+                <div className="flex gap-2 p-2">
+                  <Link
+                    href="/login"
+                    className="flex-1 py-2.5 rounded-xl text-center text-[14px] font-medium text-[var(--color-text-secondary)] border border-[var(--color-border)]"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="flex-1 py-2.5 rounded-xl text-center text-[14px] font-semibold bg-[var(--color-accent)] text-white"
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

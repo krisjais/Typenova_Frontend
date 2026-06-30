@@ -1,12 +1,13 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import TypingArea from '@/components/TypingArea';
 import LevelUpToast from '@/components/LevelUpToast';
 import { calcWPM, calcAccuracy, analyzeWeakKeys, getTextForLevel, LEVEL_THRESHOLDS, Level } from '@/utils/typing';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useLevel } from '@/context/LevelContext';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Gauge, Keyboard as KeyboardIcon, Sprout, Zap, Flame, Hash, Clock, ArrowRight, Target, AlertTriangle, CheckCircle } from 'lucide-react';
 import FontSizeControl, { useFontSize } from '@/components/FontSizeControl';
 import LiveKeyboard from '@/components/LiveKeyboard';
 import {
@@ -16,6 +17,9 @@ import {
 const TIME_OPTIONS = [15, 30, 60, 120];
 const WORD_OPTIONS = [10, 25, 50, 100];
 type TestMode = 'time' | 'words';
+
+const LEVEL_ICONS = { beginner: Sprout, intermediate: Zap, pro: Flame };
+const LEVEL_COLORS = { beginner: '#34d399', intermediate: '#fbbf24', pro: '#f87171' };
 
 export default function TestPage() {
   const { user } = useAuth();
@@ -33,6 +37,7 @@ export default function TestPage() {
   const [finished, setFinished] = useState(false);
   const [wpmHistory, setWpmHistory] = useState<{ t: number; wpm: number }[]>([]);
   const [promotedTo, setPromotedTo] = useState<Level | null>(null);
+  const [showKeyboard, setShowKeyboard] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsedRef = useRef(0);
 
@@ -60,8 +65,6 @@ export default function TestPage() {
 
     intervalRef.current = setInterval(() => {
       elapsedRef.current += 1;
-
-      // Track WPM over time
       const currentCorrect = typed.split('').filter((c, i) => c === text[i]).length;
       const currentWpm = calcWPM(currentCorrect, elapsedRef.current);
       setWpmHistory((h) => [...h, { t: elapsedRef.current, wpm: currentWpm }]);
@@ -170,45 +173,53 @@ export default function TestPage() {
     setWpmHistory([]);
   };
 
-  const badge = level ? (level === 'beginner' ? '🌱' : level === 'intermediate' ? '⚡' : '🔥') : '';
+  const LevelIcon = level ? LEVEL_ICONS[level] : null;
+  const levelColor = level ? LEVEL_COLORS[level] : '';
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 fade-in">
-      <div className="w-full max-w-3xl">
-
+    <div className="flex flex-col items-center justify-center min-h-screen px-4 pt-24 pb-12">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-3xl"
+      >
         {!finished ? (
           <>
             {/* Toolbar */}
-            <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
               {/* Mode toggle */}
-              <div className="flex rounded-full p-1 bg-black/20 border border-white/5 backdrop-blur-sm shadow-sm">
+              <div className="flex rounded-xl p-1 bg-[var(--color-surface)] border border-[var(--color-border)]">
                 {(['time', 'words'] as TestMode[]).map((m) => (
                   <button
                     key={m}
                     onClick={() => setMode(m)}
-                    className={`px-4 py-1.5 text-[11px] font-semibold tracking-widest capitalize rounded-full transition-all ${mode === m ? 'shadow-md' : 'hover:bg-white/10'}`}
+                    className="relative px-4 py-2 text-[12px] font-semibold tracking-widest capitalize rounded-lg transition-all"
                     style={{
                       background: mode === m ? 'var(--color-accent)' : 'transparent',
-                      color: mode === m ? '#fff' : 'var(--color-sub)',
+                      color: mode === m ? '#fff' : 'var(--color-text-secondary)',
                     }}
                   >
-                    {m}
+                    <span className="flex items-center gap-1.5">
+                      {m === 'time' ? <Clock size={13} /> : <Hash size={13} />}
+                      {m}
+                    </span>
                   </button>
                 ))}
               </div>
 
               {/* Options */}
-              <div className="flex rounded-full p-1 bg-black/20 border border-white/5 backdrop-blur-sm shadow-sm gap-1">
+              <div className="flex rounded-xl p-1 bg-[var(--color-surface)] border border-[var(--color-border)] gap-1">
                 {(mode === 'time' ? TIME_OPTIONS : WORD_OPTIONS).map((opt) => {
-                  const active = mode === 'time' ? opt === timeDuration : opt === wordCount;
+                  const isActive = mode === 'time' ? opt === timeDuration : opt === wordCount;
                   return (
                     <button
                       key={opt}
                       onClick={() => mode === 'time' ? setTimeDuration(opt) : setWordCount(opt)}
-                      className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all ${active ? '' : 'hover:bg-white/10'}`}
+                      className="px-3 py-2 rounded-lg text-[12px] font-bold transition-all"
                       style={{
-                        color: active ? 'var(--color-accent)' : 'var(--color-sub)',
-                        background: active ? 'rgba(var(--color-accent-rgb), 0.15)' : 'transparent',
+                        color: isActive ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                        background: isActive ? 'var(--color-accent-muted)' : 'transparent',
                       }}
                     >
                       {opt}
@@ -218,73 +229,87 @@ export default function TestPage() {
               </div>
 
               {/* Level badge */}
-              {badge && (
-                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm shadow-sm">
-                  <span className="text-[12px]">{badge}</span>
-                  <span className="text-[11px] font-semibold tracking-widest uppercase opacity-80" style={{ color: 'var(--color-text)' }}>
-                    {level && LEVEL_THRESHOLDS[level].label}
+              {LevelIcon && level && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                  <LevelIcon size={14} style={{ color: levelColor }} />
+                  <span className="text-[12px] font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
+                    {LEVEL_THRESHOLDS[level].label}
                   </span>
                 </div>
               )}
 
               {/* Font size */}
-              <div className="flex items-center h-[34px] px-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm shadow-sm">
+              <div className="flex items-center h-9 px-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
                 <FontSizeControl size={fontSize} increase={increase} decrease={decrease} />
               </div>
             </div>
 
             {/* Live stats */}
-            <div className="flex justify-center gap-3 sm:gap-6 mb-10">
-              <div className="flex flex-col items-center justify-center w-[90px] sm:w-[110px] h-[75px] sm:h-[85px] rounded-2xl bg-black/20 border border-white/5 backdrop-blur-md shadow-lg transition-transform hover:scale-105 duration-200"
-                   style={{ borderBottom: started ? '2px solid var(--color-accent)' : '1px solid rgba(255,255,255,0.05)' }}>
-                <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight" style={{ color: started ? 'var(--color-accent)' : 'var(--color-sub)' }}>
-                  {started ? wpm : '0'}
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] mt-1" style={{ color: 'var(--color-sub)' }}>wpm</div>
-              </div>
-
-              <div className="flex flex-col items-center justify-center w-[90px] sm:w-[110px] h-[75px] sm:h-[85px] rounded-2xl bg-black/20 border border-white/5 backdrop-blur-md shadow-lg transition-transform hover:scale-105 duration-200"
-                   style={{ borderBottom: started && accuracy >= 90 ? '2px solid #22c55e' : started && accuracy < 90 ? '2px solid #f59e0b' : '1px solid rgba(255,255,255,0.05)' }}>
-                <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight" style={{ color: started ? (accuracy >= 90 ? '#22c55e' : '#f59e0b') : 'var(--color-sub)' }}>
-                  {started ? `${accuracy}%` : '0%'}
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] mt-1" style={{ color: 'var(--color-sub)' }}>acc</div>
-              </div>
-
+            <div className="flex justify-center items-center gap-8 mb-10">
+              <StatInline label="WPM" value={started ? wpm : 0} active={started} color="var(--color-accent)" />
+              <div className="w-px h-6 bg-[var(--color-border)]" />
+              <StatInline
+                label="ACC"
+                value={started ? `${accuracy}%` : '0%'}
+                active={started}
+                color={started ? (accuracy >= 90 ? 'var(--color-success)' : 'var(--color-warning)') : 'var(--color-text-secondary)'}
+              />
               {mode === 'time' && (
-                <div className="flex flex-col items-center justify-center w-[90px] sm:w-[110px] h-[75px] sm:h-[85px] rounded-2xl bg-black/20 border border-white/5 backdrop-blur-md shadow-lg transition-transform hover:scale-105 duration-200"
-                     style={{ borderBottom: timeLeft <= 5 ? '2px solid #ef4444' : '1px solid rgba(255,255,255,0.05)' }}>
-                  <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight" style={{ color: timeLeft <= 5 ? '#ef4444' : 'var(--color-text)' }}>
-                    {timeLeft}
-                  </div>
-                  <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] mt-1" style={{ color: 'var(--color-sub)' }}>time</div>
-                </div>
+                <>
+                  <div className="w-px h-6 bg-[var(--color-border)]" />
+                  <StatInline
+                    label="TIME"
+                    value={timeLeft}
+                    active={true}
+                    color={timeLeft <= 5 ? 'var(--color-error)' : 'var(--color-text)'}
+                  />
+                </>
               )}
             </div>
 
             {/* Typing area */}
             <TypingArea text={text} typed={typed} onType={handleType} active={!finished} fontSize={fontSize} />
 
-            {/* Live Keyboard */}
-            <div className="mt-8 transition-opacity duration-300">
-              <LiveKeyboard active={started} />
-            </div>
-
-            {/* Restart hint */}
-            <div className="flex justify-center mt-6">
+            {/* Controls */}
+            <div className="flex items-center justify-center gap-4 mt-8">
               <button
                 onClick={reset}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs transition-all opacity-30 hover:opacity-60"
-                style={{ color: 'var(--color-text)' }}
-                title="Tab to restart"
+                className="flex items-center gap-2 text-[13px] text-[var(--color-text-secondary)] opacity-40 hover:opacity-70 transition-opacity"
               >
                 <RotateCcw size={13} />
                 <span>tab — restart</span>
               </button>
+              <div className="w-px h-4 bg-[var(--color-border)]" />
+              <button
+                onClick={() => setShowKeyboard(!showKeyboard)}
+                className="flex items-center gap-2 text-[13px] transition-opacity"
+                style={{
+                  color: showKeyboard ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                  opacity: showKeyboard ? 1 : 0.4,
+                }}
+              >
+                <KeyboardIcon size={13} />
+                <span>{showKeyboard ? 'Hide' : 'Show'} Keyboard</span>
+              </button>
             </div>
+
+            {/* Collapsible Keyboard */}
+            <AnimatePresence>
+              {showKeyboard && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="overflow-hidden mt-6"
+                >
+                  <LiveKeyboard active={started} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         ) : (
-          /* ── Result Screen ── */
+          /* Result Screen */
           <ResultScreen
             wpm={wpm}
             accuracy={accuracy}
@@ -296,14 +321,30 @@ export default function TestPage() {
             onRetry={reset}
           />
         )}
-      </div>
+      </motion.div>
 
       {promotedTo && <LevelUpToast newLevel={promotedTo} onClose={() => setPromotedTo(null)} />}
     </div>
   );
 }
 
-// ── Result Screen Component ──────────────────────────────────────────────────
+function StatInline({ label, value, active, color }: { label: string; value: string | number; active: boolean; color: string }) {
+  return (
+    <div className="flex items-baseline gap-2">
+      <span
+        className="text-2xl md:text-3xl font-bold tabular-nums tracking-tight transition-colors duration-300"
+        style={{ color: active ? color : 'var(--color-text-secondary)', opacity: active ? 1 : 0.4 }}
+      >
+        {value}
+      </span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--color-text-secondary)]">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+// ── Result Screen ──────────────────────────────────────────────────────────────
 function ResultScreen({
   wpm, accuracy, errors, elapsed, correct, wpmHistory, mode, onRetry,
 }: {
@@ -322,34 +363,46 @@ function ResultScreen({
     return () => window.removeEventListener('keydown', handler);
   }, [onRetry]);
 
+  const statItems = [
+    { label: 'WPM', value: wpm, color: 'var(--color-accent)', icon: Gauge, big: true },
+    { label: 'Accuracy', value: `${accuracy}%`, color: accuracy >= 90 ? 'var(--color-success)' : 'var(--color-warning)', icon: Target, big: true },
+    { label: 'Correct', value: correct, color: 'var(--color-success)', icon: CheckCircle, big: false },
+    { label: 'Errors', value: errors, color: errors === 0 ? 'var(--color-success)' : 'var(--color-error)', icon: AlertTriangle, big: false },
+    { label: 'Time', value: `${elapsed}s`, color: 'var(--color-text)', icon: Clock, big: false },
+    { label: 'Mode', value: mode, color: 'var(--color-text-secondary)', icon: Gauge, big: false },
+  ];
+
   return (
-    <div className="slide-up">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: 'wpm', value: wpm, color: 'var(--color-accent)', big: true },
-          { label: 'accuracy', value: `${accuracy}%`, color: accuracy >= 90 ? '#22c55e' : '#f59e0b', big: true },
-          { label: 'correct', value: correct, color: '#22c55e', big: false },
-          { label: 'errors', value: errors, color: errors === 0 ? '#22c55e' : '#ef4444', big: false },
-          { label: 'time', value: `${elapsed}s`, color: 'var(--color-text)', big: false },
-          { label: 'mode', value: mode, color: 'var(--color-sub)', big: false },
-        ].map((s) => (
-          <div key={s.label} className="p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+        {statItems.map((s) => (
+          <div
+            key={s.label}
+            className="p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] transition-colors hover:bg-[var(--color-card)]"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <s.icon size={14} style={{ color: s.color }} strokeWidth={1.8} />
+              <span className="text-[11px] uppercase tracking-widest text-[var(--color-text-secondary)] font-semibold">{s.label}</span>
+            </div>
             <div className={`font-bold ${s.big ? 'text-4xl' : 'text-2xl'}`} style={{ color: s.color }}>{s.value}</div>
-            <div className="text-xs mt-1 uppercase tracking-widest" style={{ color: 'var(--color-sub)' }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* WPM over time chart */}
       {wpmHistory.length > 2 && (
-        <div className="mb-8 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <p className="text-xs mb-3 uppercase tracking-widest" style={{ color: 'var(--color-sub)' }}>wpm over time</p>
+        <div className="mb-8 p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <p className="text-[12px] mb-4 uppercase tracking-widest text-[var(--color-text-secondary)] font-semibold">WPM over time</p>
           <ResponsiveContainer width="100%" height={140}>
             <LineChart data={wpmHistory}>
-              <XAxis dataKey="t" stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}s`} />
-              <YAxis stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 10 }} />
+              <XAxis dataKey="t" stroke="rgba(255,255,255,0.1)" tick={{ fontSize: 10, fill: 'var(--color-text-secondary)' }} tickFormatter={(v) => `${v}s`} />
+              <YAxis stroke="rgba(255,255,255,0.1)" tick={{ fontSize: 10, fill: 'var(--color-text-secondary)' }} />
               <Tooltip
-                contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }}
+                contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 12, fontSize: 12, color: 'var(--color-text)' }}
                 formatter={(v) => [`${v} wpm`]}
                 labelFormatter={(l) => `${l}s`}
               />
@@ -362,13 +415,14 @@ function ResultScreen({
       <div className="flex justify-center gap-3">
         <button
           onClick={onRetry}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition hover:opacity-90"
-          style={{ background: 'var(--color-accent)', color: '#fff' }}
+          className="group flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-[14px] bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors shadow-sm"
         >
-          <RotateCcw size={14} /> Try Again
+          <RotateCcw size={14} />
+          Try Again
+          <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
         </button>
       </div>
-      <p className="text-center text-xs mt-3" style={{ color: 'var(--color-sub)' }}>tab — restart</p>
-    </div>
+      <p className="text-center text-[13px] mt-3 text-[var(--color-text-secondary)] opacity-50">tab — restart</p>
+    </motion.div>
   );
 }

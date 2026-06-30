@@ -16,7 +16,7 @@ const KEYBOARD_ROWS = [
     { id: 'Digit0', label: '0' },
     { id: 'Minus', label: '-' },
     { id: 'Equal', label: '=' },
-    { id: 'Backspace', label: 'backspace', width: 'w-[90px]' },
+    { id: 'Backspace', label: '⌫', width: 'w-[90px]' },
   ],
   [
     { id: 'Tab', label: 'tab', width: 'w-[70px]' },
@@ -47,7 +47,7 @@ const KEYBOARD_ROWS = [
     { id: 'KeyL', label: 'l' },
     { id: 'Semicolon', label: ';' },
     { id: 'Quote', label: '\'' },
-    { id: 'Enter', label: 'enter', width: 'flex-1' },
+    { id: 'Enter', label: '↵', width: 'flex-1' },
   ],
   [
     { id: 'ShiftLeft', label: 'shift', width: 'w-[115px]' },
@@ -70,7 +70,7 @@ const KEYBOARD_ROWS = [
     { id: 'Space', label: '', width: 'w-[325px]' },
     { id: 'AltRight', label: 'alt', width: 'w-[65px]' },
     { id: 'MetaRight', label: 'win', width: 'w-[65px]' },
-    { id: 'ContextMenu', label: 'menu', width: 'w-[65px]' },
+    { id: 'ContextMenu', label: 'fn', width: 'w-[65px]' },
     { id: 'ControlRight', label: 'ctrl', width: 'flex-1' },
   ]
 ];
@@ -105,39 +105,25 @@ export default function LiveKeyboard({ active }: { active?: boolean }) {
   }, []);
 
   return (
-    <div className="w-full max-w-[850px] mx-auto mt-6 mb-2 p-5 md:px-8 md:py-6 rounded-3xl relative preserve-3d transition-transform duration-300" 
-         style={{ perspective: '1000px' }}>
-      
-      {/* Container Background with Glassmorphic styling */}
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-xl rounded-[2rem] border border-white/5 
-          shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.05)] pointer-events-none" />
-
-      {/* Decorative gradient orb behind keyboard */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 
-          rounded-full bg-[var(--color-accent)] opacity-5 blur-[100px] pointer-events-none" />
-
-      <div className="relative flex flex-col gap-[6px] md:gap-[8px]">
+    <div className="w-full max-w-[820px] mx-auto p-5 md:px-7 md:py-5 rounded-2xl relative bg-[var(--color-surface)] border border-[var(--color-border)]">
+      <div className="relative flex flex-col gap-[5px] md:gap-[6px]">
         {KEYBOARD_ROWS.map((row, rowIndex) => (
-          <div key={rowIndex} className="flex justify-center gap-[6px] md:gap-[8px]">
+          <div key={rowIndex} className="flex justify-center gap-[5px] md:gap-[6px]">
             {row.map((k) => {
               const isActive = activeKeys.has(k.id);
               return (
-                <div key={k.id} className={`${k.width || 'w-[46px]'} relative select-none group`}>
-                  {/* The tactile key body */}
+                <div key={k.id} className={`${k.width || 'w-[44px]'} relative select-none`}>
                   <div
                     className={`
-                      w-full h-[44px] md:h-[50px]
-                      rounded-xl flex items-center justify-center 
-                      text-[12px] md:text-[13px] tracking-wider uppercase font-semibold
-                      transition-all duration-[50ms] ease-out
-                      ${isActive 
-                        ? 'translate-y-[4px] bg-[var(--color-accent)] text-[var(--color-bg)] shadow-[0_0_24px_rgba(var(--color-accent-rgb),0.5)] z-10' 
-                        : 'bg-gradient-to-b from-[rgba(255,255,255,0.05)] to-[rgba(255,255,255,0.01)] text-[var(--color-sub)] border-t border-[rgba(255,255,255,0.05)] shadow-[0_4px_0_rgba(0,0,0,0.6),0_5px_8px_rgba(0,0,0,0.5)] hover:from-[rgba(255,255,255,0.08)] hover:to-[rgba(255,255,255,0.03)]'
+                      w-full h-[40px] md:h-[44px]
+                      rounded-lg flex items-center justify-center 
+                      text-[11px] md:text-[12px] tracking-wider uppercase font-medium
+                      transition-all duration-75 ease-out
+                      ${isActive
+                        ? 'translate-y-[2px] bg-[var(--color-accent)] text-white shadow-[0_0_16px_var(--color-accent-glow)]'
+                        : 'bg-[var(--color-card)] text-[var(--color-text-secondary)] border border-[var(--color-border)] shadow-[0_2px_0_rgba(0,0,0,0.4)] hover:bg-[rgba(255,255,255,0.06)]'
                       }
                     `}
-                    style={{
-                      boxShadow: isActive ? '0 0 16px var(--color-accent), 0 0px 0px rgba(0,0,0,0)' : undefined
-                    }}
                   >
                     {k.label}
                   </div>

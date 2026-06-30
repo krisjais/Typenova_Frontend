@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Sprout, Zap, Flame, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Level } from '@/utils/typing';
@@ -14,7 +15,7 @@ const LEVELS: { id: Level; icon: LucideIcon; iconColor: string; label: string; d
   {
     id: 'beginner',
     icon: Sprout,
-    iconColor: '#34d399', // Emerald
+    iconColor: '#34d399',
     label: 'Beginner',
     desc: "Short common words, simple patterns. Perfect if you're just starting out.",
     wpm: '< 40 WPM',
@@ -23,7 +24,7 @@ const LEVELS: { id: Level; icon: LucideIcon; iconColor: string; label: string; d
   {
     id: 'intermediate',
     icon: Zap,
-    iconColor: '#fbbf24', // Amber
+    iconColor: '#fbbf24',
     label: 'Intermediate',
     desc: 'Full sentences with varied vocabulary. For those who can type but want to improve.',
     wpm: '40–70 WPM',
@@ -32,7 +33,7 @@ const LEVELS: { id: Level; icon: LucideIcon; iconColor: string; label: string; d
   {
     id: 'pro',
     icon: Flame,
-    iconColor: '#f87171', // Red
+    iconColor: '#f87171',
     label: 'Pro',
     desc: 'Complex technical paragraphs. For experienced typists chasing peak performance.',
     wpm: '70+ WPM',
@@ -45,7 +46,6 @@ export default function LevelSelectModal({ onSelect, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Wait for client mount before using portal
   useEffect(() => { setMounted(true); }, []);
 
   const handleConfirm = async () => {
@@ -68,84 +68,89 @@ export default function LevelSelectModal({ onSelect, onClose }: Props) {
   if (!mounted) return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-9999 flex items-center justify-center bg-black/70 backdrop-blur-sm fade-in px-4"
-      onClick={handleBackdropClick}
-    >
-      <div
-        className="w-full max-w-lg rounded-2xl p-8 shadow-2xl"
-        style={{ background: 'var(--color-bg)', border: '1px solid rgba(255,255,255,0.1)' }}
-        onClick={(e) => e.stopPropagation()}
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+        onClick={handleBackdropClick}
       >
-        <div className="flex items-start justify-between mb-1">
-          <h2 className="text-2xl font-bold" style={{ color: 'var(--color-accent)' }}>
-            Choose Your Level
-          </h2>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="text-2xl opacity-40 hover:opacity-100 transition-opacity leading-none"
-              aria-label="Close"
-            >
-              ×
-            </button>
-          )}
-        </div>
-        <p className="text-sm opacity-50 mb-6">
-          We'll tailor your practice content to match your skill. You can change this later.
-        </p>
-
-        <div className="space-y-3 mb-6">
-          {LEVELS.map((l) => (
-            <button
-              key={l.id}
-              onClick={() => setSelected(l.id)}
-              className="w-full text-left p-4 rounded-xl transition-all hover:scale-[1.01]"
-              style={{
-                background: selected === l.id ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${selected === l.id ? 'var(--color-accent)' : 'rgba(255,255,255,0.08)'}`,
-              }}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold flex items-center gap-3">
-                  <span 
-                    className="flex shrink-0 items-center justify-center p-1.5 rounded-lg border shadow-sm transition-all duration-300"
-                    style={{ 
-                      backgroundColor: `${l.iconColor}15`, 
-                      color: l.iconColor,
-                      borderColor: selected === l.id ? l.iconColor : `${l.iconColor}30`,
-                      boxShadow: selected === l.id ? `0 0 10px ${l.iconColor}40` : 'none'
-                    }}
-                  >
-                    <l.icon size={18} strokeWidth={2.5} />
-                  </span>
-                  <span className="text-lg tracking-wide">{l.label}</span>
-                </span>
-                <span
-                  className="text-xs px-2 py-0.5 rounded-full font-mono"
-                  style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--color-accent)' }}
-                >
-                  {l.wpm}
-                </span>
-              </div>
-              <p className="text-xs opacity-50">{l.desc}</p>
-              <p className="text-xs mt-1 font-mono opacity-40 truncate">
-                e.g. {l.examples.join(' · ')}
-              </p>
-            </button>
-          ))}
-        </div>
-
-        <button
-          onClick={handleConfirm}
-          disabled={!selected || loading}
-          className="w-full py-3 rounded-lg font-semibold text-sm transition hover:opacity-90 disabled:opacity-30"
-          style={{ background: 'var(--color-accent)', color: '#fff' }}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-lg rounded-2xl p-8 shadow-2xl border border-[var(--color-border)] bg-[var(--color-bg)]"
+          onClick={(e) => e.stopPropagation()}
         >
-          {loading ? 'Saving...' : 'Start Typing →'}
-        </button>
-      </div>
-    </div>,
+          <div className="flex items-start justify-between mb-1">
+            <h2 className="text-2xl font-bold text-[var(--color-accent)]">
+              Choose Your Level
+            </h2>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/[0.06] text-[var(--color-text-secondary)] transition-colors text-lg"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-6">
+            We&apos;ll tailor your practice content to match your skill. You can change this later.
+          </p>
+
+          <div className="space-y-3 mb-6">
+            {LEVELS.map((l) => (
+              <button
+                key={l.id}
+                onClick={() => setSelected(l.id)}
+                className="w-full text-left p-4 rounded-2xl transition-all duration-200 hover:scale-[1.01]"
+                style={{
+                  background: selected === l.id ? 'var(--color-accent-muted)' : 'var(--color-surface)',
+                  border: `1px solid ${selected === l.id ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                  boxShadow: selected === l.id ? '0 0 20px var(--color-accent-glow)' : 'none',
+                }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold flex items-center gap-3">
+                    <span
+                      className="flex shrink-0 items-center justify-center w-9 h-9 rounded-xl border transition-all duration-300"
+                      style={{
+                        backgroundColor: `${l.iconColor}12`,
+                        color: l.iconColor,
+                        borderColor: selected === l.id ? l.iconColor : `${l.iconColor}25`,
+                        boxShadow: selected === l.id ? `0 0 12px ${l.iconColor}30` : 'none'
+                      }}
+                    >
+                      <l.icon size={18} strokeWidth={2.2} />
+                    </span>
+                    <span className="text-[16px] tracking-wide text-[var(--color-text)]">{l.label}</span>
+                  </span>
+                  <span className="text-[12px] px-2.5 py-1 rounded-lg font-mono bg-white/[0.06] text-[var(--color-accent)]">
+                    {l.wpm}
+                  </span>
+                </div>
+                <p className="text-[13px] text-[var(--color-text-secondary)] ml-12">{l.desc}</p>
+                <p className="text-[12px] mt-1 font-mono text-[var(--color-text-secondary)] opacity-50 ml-12 truncate">
+                  e.g. {l.examples.join(' · ')}
+                </p>
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={handleConfirm}
+            disabled={!selected || loading}
+            className="w-full py-3 rounded-xl font-semibold text-[14px] bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-30 shadow-sm shadow-[var(--color-accent)]/20"
+          >
+            {loading ? 'Saving...' : 'Start Typing →'}
+          </button>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>,
     document.body
   );
 }

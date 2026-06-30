@@ -1,9 +1,11 @@
 'use client';
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Mail, Lock, User } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 export default function SignupPage() {
   const { signup } = useAuth();
@@ -33,85 +35,103 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] px-4 fade-in">
-      <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-2 text-center" style={{ color: 'var(--color-accent)' }}>Create account</h1>
-        <p className="text-center text-sm opacity-50 mb-8">Join TypeNova and start improving</p>
+    <div className="flex items-center justify-center min-h-screen px-4 pt-20">
+      {/* Background glow */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-[var(--color-accent)] opacity-[0.03] blur-[120px]" />
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="p-3 rounded-lg text-sm text-red-400 bg-red-400/10 border border-red-400/20">{error}</div>
-          )}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-sm relative"
+      >
+        {/* Logo */}
+        <Logo layout="vertical" size={32} className="mb-8" />
 
-          <input
-            type="text"
-            placeholder="Username (min 2 chars)"
-            value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
-            required
-            className="w-full px-4 py-3 rounded-lg text-sm outline-none transition"
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: 'var(--color-text)',
-            }}
-          />
+        <h1 className="text-xl font-bold mb-1 text-center text-[var(--color-text)]">Create account</h1>
+        <p className="text-center text-xs text-[var(--color-text-secondary)] mb-6">Join TypeNova and start improving</p>
 
-          <input
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            required
-            className="w-full px-4 py-3 rounded-lg text-sm outline-none transition"
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: 'var(--color-text)',
-            }}
-          />
+        <div className="p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 rounded-xl text-sm text-[var(--color-error)] bg-[var(--color-error)]/8 border border-[var(--color-error)]/15">
+                {error}
+              </div>
+            )}
 
-          <div className="relative">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-              className="w-full px-4 py-3 pr-11 rounded-lg text-sm outline-none transition"
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'var(--color-text)',
-              }}
-            />
+            <div className="relative">
+              <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
+              <input
+                type="text"
+                placeholder="Username"
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                required
+                className="w-full pl-10 pr-4 py-3 rounded-xl text-sm bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text)] placeholder:text-[var(--color-text-secondary)] transition-all"
+              />
+            </div>
+
+            <div className="relative">
+              <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
+              <input
+                type="email"
+                placeholder="Email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                required
+                className="w-full pl-10 pr-4 py-3 rounded-xl text-sm bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text)] placeholder:text-[var(--color-text-secondary)] transition-all"
+              />
+            </div>
+
+            <div className="relative">
+              <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                required
+                className="w-full pl-10 pr-11 py-3 rounded-xl text-sm bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text)] placeholder:text-[var(--color-text-secondary)] transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
+
             <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 transition-opacity"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              type="submit"
+              disabled={loading}
+              className="group w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-[14px] bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50 shadow-sm shadow-[var(--color-accent)]/20"
             >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                <>
+                  Sign Up
+                  <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+                </>
+              )}
             </button>
-          </div>
+          </form>
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-lg font-semibold text-sm transition hover:opacity-90 disabled:opacity-50"
-            style={{ background: 'var(--color-accent)', color: '#fff' }}
-          >
-            {loading ? 'Creating account...' : 'Sign Up'}
-          </button>
-        </form>
-
-        <p className="text-center text-sm opacity-50 mt-6">
+        <p className="text-center text-sm text-[var(--color-text-secondary)] mt-6">
           Already have an account?{' '}
-          <Link href="/login" style={{ color: 'var(--color-accent)' }} className="hover:underline">
+          <Link href="/login" className="text-[var(--color-accent)] hover:underline font-medium">
             Sign in
           </Link>
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 }

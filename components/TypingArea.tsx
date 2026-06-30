@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { Lock } from 'lucide-react';
 
 interface Props {
   text: string;
@@ -10,7 +11,7 @@ interface Props {
   fontSize?: number;
 }
 
-export default function TypingArea({ text, typed, onType, active, practiceMode = false, fontSize = 24 }: Props) {
+export default function TypingArea({ text, typed, onType, active, practiceMode = false, fontSize = 26 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const activeWordRef = useRef<HTMLSpanElement>(null);
@@ -49,13 +50,10 @@ export default function TypingArea({ text, typed, onType, active, practiceMode =
     const container = containerRef.current;
     const word = activeWordRef.current;
     const lineH = word.offsetHeight;
-    
-    // Scroll down if caret moves below line 2
+
     if (word.offsetTop > container.scrollTop + lineH * 1.5) {
       container.scrollTop = word.offsetTop - lineH;
-    }
-    // Scroll up if caret moves above current view (e.g. holding backspace)
-    else if (word.offsetTop < container.scrollTop) {
+    } else if (word.offsetTop < container.scrollTop) {
       container.scrollTop = word.offsetTop;
     }
   }, [typed]);
@@ -86,16 +84,11 @@ export default function TypingArea({ text, typed, onType, active, practiceMode =
 
   const caretPos = typed.length;
 
-  // Determine which word the caret belongs to
-  // Rule: caret is in word[i] if caretPos is within [word.start, word.start + word.chars.length]
-  // When caretPos === wordEnd (after last char, before space), it still belongs to that word
   const caretWordIdx = (() => {
     for (let i = 0; i < words.length; i++) {
       const w = words[i];
       const wordEnd = w.start + w.chars.length;
-      // caret belongs to this word if it's within the word OR at the end (before space)
       if (caretPos >= w.start && caretPos <= wordEnd) return i;
-      // also belongs here if user typed extra chars beyond word end (still on this word)
       if (i === words.length - 1 && caretPos > wordEnd) return i;
       const nextStart = words[i + 1]?.start ?? Infinity;
       if (caretPos > wordEnd && caretPos < nextStart) return i;
@@ -105,51 +98,52 @@ export default function TypingArea({ text, typed, onType, active, practiceMode =
 
   return (
     <div
-      className="relative select-none cursor-text"
+      className="relative select-none cursor-text rounded-2xl p-6 bg-[var(--color-surface)] border border-[var(--color-border)]"
       onClick={() => inputRef.current?.focus()}
     >
+      {/* CapsLock Warning */}
       {capsLockActive && focused && (
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[var(--color-error)]/10 text-[var(--color-error)] px-4 py-1.5 rounded-full text-[13px] font-semibold border border-[var(--color-error)]/20 backdrop-blur-md z-20 shadow-lg tracking-wide">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[var(--color-error)]/10 text-[var(--color-error)] px-4 py-2 rounded-xl text-[13px] font-semibold border border-[var(--color-error)]/20 backdrop-blur-md z-20 shadow-lg tracking-wide">
+          <Lock size={13} />
           Caps Lock is ON
         </div>
       )}
 
+      {/* Focus overlay */}
       {!focused && (
         <div
-          className="absolute inset-0 z-10 flex items-center justify-center rounded-xl"
-          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)' }}
+          className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl"
+          style={{ background: 'rgba(9, 9, 11, 0.7)', backdropFilter: 'blur(3px)' }}
         >
-          <p className="text-sm" style={{ color: 'var(--color-sub)' }}>
-            click or press any key to focus
+          <p className="text-[14px] font-medium text-[var(--color-text-secondary)]">
+            Click or press any key to focus
           </p>
         </div>
       )}
 
       <div
         ref={containerRef}
-        className="rounded-xl px-1 py-2 overflow-hidden"
+        className="overflow-hidden"
         style={{
-          maxHeight: `calc(${fontSize}px * 1.9 * 3 + 1rem)`,
-          lineHeight: '1.9em',
+          maxHeight: `calc(${fontSize}px * 2 * 3 + 1.5rem)`,
+          lineHeight: '2em',
           transition: 'max-height 0.2s ease',
         }}
       >
         <div
-          className="flex flex-wrap gap-x-[0.6em]"
-          style={{ fontSize: `${fontSize}px`, lineHeight: '1.9em', transition: 'font-size 0.15s ease' }}
+          className="flex flex-wrap gap-x-[0.5em] font-mono tracking-wide antialiased"
+          style={{ fontSize: `${fontSize}px`, lineHeight: '2em', transition: 'font-size 0.15s ease' }}
         >
           {words.map((word, wi) => {
             const wordEnd = word.start + word.chars.length;
             const isCaretWord = wi === caretWordIdx;
             const isCompleted = caretPos > wordEnd && !isCaretWord;
+            const isUpcoming = wi > caretWordIdx;
 
-            // Error underline for completed words with mistakes
             const hasError = isCompleted && word.chars.some(
               (ch, ci) => typed[word.start + ci] !== ch
             );
 
-            // Extra chars typed beyond this word (only possible on caret word)
             const extraTyped = isCaretWord && caretPos > wordEnd
               ? typed.slice(wordEnd, caretPos)
               : '';
@@ -158,17 +152,16 @@ export default function TypingArea({ text, typed, onType, active, practiceMode =
               <span
                 key={wi}
                 ref={isCaretWord ? activeWordRef : undefined}
-                className="relative inline-flex items-center"
-                style={{
-                  borderBottom: hasError ? '2px solid var(--color-error)' : '2px solid transparent',
-                }}
+                className={`relative inline-flex items-center px-1 rounded-md transition-all duration-200 ${
+                  hasError
+                    ? 'border-b-2 border-[var(--color-error)]'
+                    : 'border-b border-transparent'
+                }`}
               >
                 {word.chars.map((char, ci) => {
                   const globalIdx = word.start + ci;
                   const isTyped = globalIdx < typed.length;
                   const typedChar = typed[globalIdx];
-
-                  // Is the caret immediately BEFORE this character?
                   const showCaretBefore = isCaretWord && globalIdx === caretPos;
 
                   let color: string;
@@ -177,19 +170,17 @@ export default function TypingArea({ text, typed, onType, active, practiceMode =
                   else color = 'var(--color-error)';
 
                   return (
-                    <span key={ci} className="relative" style={{ color }}>
+                    <span key={ci} className="relative transition-colors duration-75" style={{ color }}>
                       {showCaretBefore && <Caret focused={focused} />}
                       {char}
                     </span>
                   );
                 })}
 
-                {/* Caret after last char of this word (caretPos === wordEnd) */}
                 {isCaretWord && caretPos === wordEnd && extraTyped.length === 0 && (
                   <Caret focused={focused} inline />
                 )}
 
-                {/* Extra chars beyond word length */}
                 {extraTyped.split('').map((ec, ei) => {
                   const showCaretAfter = isCaretWord && wordEnd + ei + 1 === caretPos;
                   return (
@@ -198,8 +189,8 @@ export default function TypingArea({ text, typed, onType, active, practiceMode =
                       className="relative"
                       style={{
                         color: 'var(--color-error)',
-                        background: 'rgba(239,68,68,0.2)',
-                        borderRadius: 2,
+                        background: 'var(--color-error-bg)',
+                        borderRadius: 3,
                       }}
                     >
                       {ec}
@@ -227,26 +218,27 @@ export default function TypingArea({ text, typed, onType, active, practiceMode =
   );
 }
 
-// Single caret component — one source of truth
 function Caret({ focused, inline, after }: { focused: boolean; inline?: boolean; after?: boolean }) {
   const style: React.CSSProperties = inline
     ? {
         display: 'inline-block',
-        width: 2,
-        height: '0.8em',
+        width: 2.5,
+        height: '0.85em',
         verticalAlign: 'middle',
-        borderRadius: 1,
+        borderRadius: 2,
         background: 'var(--color-accent)',
         marginLeft: 1,
+        boxShadow: '0 0 8px var(--color-accent-glow)',
       }
     : {
         position: 'absolute',
         [after ? 'right' : 'left']: -1,
         top: '10%',
         bottom: '10%',
-        width: 2,
-        borderRadius: 1,
+        width: 2.5,
+        borderRadius: 2,
         background: 'var(--color-accent)',
+        boxShadow: '0 0 8px var(--color-accent-glow)',
       };
 
   return (

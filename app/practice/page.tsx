@@ -1,14 +1,27 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import TypingArea from '@/components/TypingArea';
 import LevelUpToast from '@/components/LevelUpToast';
 import { calcWPM, calcAccuracy, analyzeWeakKeys, getTextForLevel, generateWeakKeyPractice, LEVEL_THRESHOLDS, Level } from '@/utils/typing';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useLevel } from '@/context/LevelContext';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Keyboard as KeyboardIcon, Sprout, Zap, Flame, ArrowRight } from 'lucide-react';
 import FontSizeControl, { useFontSize } from '@/components/FontSizeControl';
 import LiveKeyboard from '@/components/LiveKeyboard';
+
+const LEVEL_ICONS = {
+  beginner: Sprout,
+  intermediate: Zap,
+  pro: Flame,
+};
+
+const LEVEL_COLORS = {
+  beginner: '#34d399',
+  intermediate: '#fbbf24',
+  pro: '#f87171',
+};
 
 export default function PracticePage() {
   const { user } = useAuth();
@@ -23,6 +36,7 @@ export default function PracticePage() {
   const [weakKeys, setWeakKeys] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [promotedTo, setPromotedTo] = useState<Level | null>(null);
+  const [showKeyboard, setShowKeyboard] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -122,116 +136,176 @@ export default function PracticePage() {
   });
 
   const threshold = LEVEL_THRESHOLDS[effectiveLevel];
-  const badge = effectiveLevel === 'beginner' ? '🌱' : effectiveLevel === 'intermediate' ? '⚡' : '🔥';
+  const LevelIcon = LEVEL_ICONS[effectiveLevel];
+  const levelColor = LEVEL_COLORS[effectiveLevel];
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 fade-in">
-      <div className="w-full max-w-3xl">
-
-        {/* Header / Toolbar */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
-          <div className="flex items-center px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm shadow-sm hover:bg-white/10 transition-colors">
-            <span className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: 'var(--color-accent)' }}>practice</span>
+    <div className="flex flex-col items-center justify-center min-h-screen px-4 pt-24 pb-12">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-3xl"
+      >
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+            <KeyboardIcon size={14} className="text-[var(--color-accent)]" />
+            <span className="text-[12px] font-semibold tracking-widest uppercase text-[var(--color-accent)]">
+              practice
+            </span>
           </div>
-          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm shadow-sm hover:bg-white/10 transition-colors">
-            <span className="text-[12px]">{badge}</span>
-            <span className="text-[11px] font-semibold tracking-widest uppercase opacity-80" style={{ color: 'var(--color-text)' }}>{threshold.label}</span>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+            <LevelIcon size={14} style={{ color: levelColor }} />
+            <span className="text-[12px] font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">
+              {threshold.label}
+            </span>
           </div>
           {effectiveLevel !== 'pro' && (
-            <div className="flex items-center px-4 py-1.5 rounded-full backdrop-blur-sm shadow-sm transition-colors"
-                 style={{ background: 'rgba(var(--color-accent-rgb), 0.1)', border: '1px solid rgba(var(--color-accent-rgb), 0.2)' }}>
-              <span className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: 'var(--color-accent)' }}>guided mode</span>
+            <div className="flex items-center px-4 py-2 rounded-xl bg-[var(--color-accent-muted)] border border-[var(--color-accent)]/20">
+              <span className="text-[12px] font-semibold tracking-widest uppercase text-[var(--color-accent)]">
+                guided mode
+              </span>
             </div>
           )}
-          <div className="flex items-center h-[34px] px-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm shadow-sm">
+          <div className="flex items-center h-9 px-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
             <FontSizeControl size={fontSize} increase={increase} decrease={decrease} />
           </div>
         </div>
 
-        {/* Live stats */}
-        <div className="flex justify-center gap-3 sm:gap-6 mb-10">
-          <div className="flex flex-col items-center justify-center w-[90px] sm:w-[110px] h-[75px] sm:h-[85px] rounded-2xl bg-black/20 border border-white/5 backdrop-blur-md shadow-lg transition-transform hover:scale-105 duration-200"
-               style={{ borderBottom: active ? '2px solid var(--color-accent)' : '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight" style={{ color: active ? 'var(--color-accent)' : 'var(--color-sub)' }}>
-              {active ? wpm : '0'}
-            </div>
-            <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] mt-1" style={{ color: 'var(--color-sub)' }}>wpm</div>
-          </div>
-          
-          <div className="flex flex-col items-center justify-center w-[90px] sm:w-[110px] h-[75px] sm:h-[85px] rounded-2xl bg-black/20 border border-white/5 backdrop-blur-md shadow-lg transition-transform hover:scale-105 duration-200"
-               style={{ borderBottom: active && accuracy >= 90 ? '2px solid #22c55e' : active && accuracy < 90 ? '2px solid #f59e0b' : '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight" style={{ color: active ? (accuracy >= 90 ? '#22c55e' : '#f59e0b') : 'var(--color-sub)' }}>
-              {active ? `${accuracy}%` : '0%'}
-            </div>
-            <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] mt-1" style={{ color: 'var(--color-sub)' }}>acc</div>
-          </div>
-          
-          <div className="flex flex-col items-center justify-center w-[90px] sm:w-[110px] h-[75px] sm:h-[85px] rounded-2xl bg-black/20 border border-white/5 backdrop-blur-md shadow-lg transition-transform hover:scale-105 duration-200"
-               style={{ borderBottom: elapsed > 0 ? '2px solid var(--color-sub)' : '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight" style={{ color: elapsed > 0 ? 'var(--color-text)' : 'var(--color-sub)' }}>
-              {elapsed}s
-            </div>
-            <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] mt-1" style={{ color: 'var(--color-sub)' }}>time</div>
-          </div>
+        {/* Live stats — inline horizontal */}
+        <div className="flex justify-center items-center gap-8 mb-10">
+          <StatInline label="WPM" value={active ? wpm : 0} active={active} color="var(--color-accent)" />
+          <div className="w-px h-6 bg-[var(--color-border)]" />
+          <StatInline
+            label="ACC"
+            value={active ? `${accuracy}%` : '0%'}
+            active={active}
+            color={active ? (accuracy >= 90 ? 'var(--color-success)' : 'var(--color-warning)') : 'var(--color-text-secondary)'}
+          />
+          <div className="w-px h-6 bg-[var(--color-border)]" />
+          <StatInline label="TIME" value={`${elapsed}s`} active={elapsed > 0} color="var(--color-text)" />
         </div>
 
         {/* Typing area */}
         <TypingArea text={text} typed={typed} onType={handleType} active={!isComplete} practiceMode fontSize={fontSize} />
 
         {/* Complete banner */}
-        {isComplete && (
-          <div className="mt-6 p-4 rounded-xl text-center slide-up" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
-            <p className="font-semibold text-sm mb-1" style={{ color: 'var(--color-accent)' }}>
-              {wpm} wpm · {accuracy}% accuracy
-            </p>
-            {weakKeys.length > 0 && (
-              <p className="text-xs mb-3" style={{ color: 'var(--color-sub)' }}>
-                weak keys: <span className="font-mono text-red-400">{weakKeys.join(' ')}</span>
-              </p>
-            )}
-            <div className="flex justify-center gap-2">
-              <button
-                onClick={() => reset(false)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold transition hover:opacity-90"
-                style={{ background: 'var(--color-accent)', color: '#fff' }}
-              >
-                Next
-              </button>
+        <AnimatePresence>
+          {isComplete && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-8 p-6 rounded-2xl text-center border border-[var(--color-accent)]/20 bg-[var(--color-accent-muted)]"
+            >
+              <div className="flex items-center justify-center gap-6 mb-4">
+                <div>
+                  <div className="text-3xl font-bold text-[var(--color-accent)]">{wpm}</div>
+                  <div className="text-[11px] uppercase tracking-widest text-[var(--color-text-secondary)] mt-1">WPM</div>
+                </div>
+                <div className="w-px h-10 bg-[var(--color-border)]" />
+                <div>
+                  <div className="text-3xl font-bold" style={{ color: accuracy >= 90 ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                    {accuracy}%
+                  </div>
+                  <div className="text-[11px] uppercase tracking-widest text-[var(--color-text-secondary)] mt-1">Accuracy</div>
+                </div>
+              </div>
+
               {weakKeys.length > 0 && (
-                <button
-                  onClick={() => reset(true)}
-                  className="px-4 py-2 rounded-lg text-xs border transition hover:border-white/50"
-                  style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'var(--color-text)' }}
-                >
-                  Practice Weak Keys
-                </button>
+                <div className="flex items-center justify-center gap-2 mb-5">
+                  <span className="text-[12px] text-[var(--color-text-secondary)]">Weak keys:</span>
+                  <div className="flex gap-1.5">
+                    {weakKeys.map((k) => (
+                      <span key={k} className="px-2 py-0.5 rounded-md text-[12px] font-mono font-semibold bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/20">
+                        {k}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
-            </div>
-          </div>
-        )}
 
-        {!isComplete && (
-          <div className="mt-8 transition-opacity duration-300">
-            <LiveKeyboard active={active} />
-          </div>
-        )}
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={() => reset(false)}
+                  className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors shadow-sm"
+                >
+                  Next
+                  <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+                </button>
+                {weakKeys.length > 0 && (
+                  <button
+                    onClick={() => reset(true)}
+                    className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/[0.04] transition-colors"
+                  >
+                    Practice Weak Keys
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Restart hint */}
+        {/* Keyboard toggle + restart */}
         {!isComplete && (
-          <div className="flex justify-center mt-6">
+          <div className="flex items-center justify-center gap-4 mt-8">
             <button
               onClick={() => reset(false)}
-              className="flex items-center gap-2 text-xs transition-all hover:opacity-60 opacity-30"
-              style={{ color: 'var(--color-text)' }}
+              className="flex items-center gap-2 text-[13px] text-[var(--color-text-secondary)] opacity-40 hover:opacity-70 transition-opacity"
             >
               <RotateCcw size={13} />
               <span>tab — restart</span>
             </button>
+            <div className="w-px h-4 bg-[var(--color-border)]" />
+            <button
+              onClick={() => setShowKeyboard(!showKeyboard)}
+              className="flex items-center gap-2 text-[13px] transition-opacity"
+              style={{
+                color: showKeyboard ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                opacity: showKeyboard ? 1 : 0.4,
+              }}
+            >
+              <KeyboardIcon size={13} />
+              <span>{showKeyboard ? 'Hide' : 'Show'} Keyboard</span>
+            </button>
           </div>
         )}
-      </div>
+
+        {/* Collapsible Keyboard */}
+        <AnimatePresence>
+          {showKeyboard && !isComplete && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden mt-6"
+            >
+              <LiveKeyboard active={active} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {promotedTo && <LevelUpToast newLevel={promotedTo} onClose={() => setPromotedTo(null)} />}
+    </div>
+  );
+}
+
+function StatInline({ label, value, active, color }: { label: string; value: string | number; active: boolean; color: string }) {
+  return (
+    <div className="flex items-baseline gap-2">
+      <span
+        className="text-2xl md:text-3xl font-bold tabular-nums tracking-tight transition-colors duration-300"
+        style={{ color: active ? color : 'var(--color-text-secondary)', opacity: active ? 1 : 0.4 }}
+      >
+        {value}
+      </span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--color-text-secondary)]">
+        {label}
+      </span>
     </div>
   );
 }

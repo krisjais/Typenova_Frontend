@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useLevel } from '@/context/LevelContext';
 import { api } from '@/lib/api';
@@ -8,7 +9,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar,
 } from 'recharts';
 import Link from 'next/link';
-import { Sprout, Zap, Flame } from 'lucide-react';
+import { Sprout, Zap, Flame, BarChart3, Target, Percent, TrendingUp, Award, ArrowRight } from 'lucide-react';
 import LevelSelectModal from '@/components/LevelSelectModal';
 
 interface Stat {
@@ -32,6 +33,9 @@ interface StatsData {
   streak: number;
 }
 
+const LEVEL_ICONS = { beginner: Sprout, intermediate: Zap, pro: Flame };
+const LEVEL_COLORS = { beginner: '#34d399', intermediate: '#fbbf24', pro: '#f87171' };
+
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const { level, setLevel } = useLevel();
@@ -50,15 +54,32 @@ export default function DashboardPage() {
   }, [user]);
 
   if (loading || fetching) {
-    return <div className="flex items-center justify-center min-h-[60vh] opacity-50">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+          <div className="w-5 h-5 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+          Loading...
+        </div>
+      </div>
+    );
   }
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="opacity-60">Sign in to view your dashboard</p>
-        <Link href="/login" className="px-6 py-2 rounded-lg text-sm font-semibold" style={{ background: 'var(--color-accent)', color: '#fff' }}>
-          Login
+      <div className="flex flex-col items-center justify-center min-h-screen gap-6 px-4">
+        <div className="w-16 h-16 rounded-2xl bg-[var(--color-accent-muted)] flex items-center justify-center">
+          <BarChart3 size={28} className="text-[var(--color-accent)]" />
+        </div>
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-[var(--color-text)] mb-2">Sign in to view your dashboard</h2>
+          <p className="text-[var(--color-text-secondary)] text-sm">Track your progress, analyze weak keys, and improve faster.</p>
+        </div>
+        <Link
+          href="/login"
+          className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl text-[14px] font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors"
+        >
+          Log In
+          <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>
     );
@@ -84,136 +105,151 @@ export default function DashboardPage() {
     ? Math.round(data.stats.reduce((s, r) => s + r.accuracy, 0) / data.stats.length)
     : 0;
 
+  const LevelIcon = level ? LEVEL_ICONS[level] : null;
+  const levelColor = level ? LEVEL_COLORS[level] : '';
+
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12 fade-in">
-      <h1 className="text-2xl font-bold mb-8" style={{ color: 'var(--color-accent)' }}>
-        Dashboard — {user.username}
-      </h1>
+    <div className="max-w-5xl mx-auto px-4 md:px-8 pt-24 pb-16">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-10">
+          <div className="w-10 h-10 rounded-xl bg-[var(--color-accent-muted)] flex items-center justify-center">
+            <BarChart3 size={20} className="text-[var(--color-accent)]" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--color-text)]">Dashboard</h1>
+            <p className="text-sm text-[var(--color-text-secondary)]">{user.username}&apos;s typing analytics</p>
+          </div>
+        </div>
 
-      {/* Level indicator */}
-      {level && (
-        <div className="flex items-center justify-between mb-6 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div className="flex items-center gap-4">
-            {(() => {
-              const icons = {
-                beginner: { Icon: Sprout, color: '#34d399' },
-                intermediate: { Icon: Zap, color: '#fbbf24' },
-                pro: { Icon: Flame, color: '#f87171' },
-              };
-              const { Icon, color } = icons[level] || icons.beginner;
-              return (
-                <span 
-                  className="flex shrink-0 items-center justify-center p-2.5 rounded-xl border shadow-sm"
-                  style={{ 
-                    backgroundColor: `${color}15`, 
-                    color: color,
-                    borderColor: `${color}50`,
-                    boxShadow: `0 0 15px ${color}20`
-                  }}
-                >
-                  <Icon size={24} strokeWidth={2.5} />
-                </span>
-              );
-            })()}
-            <div>
-              <p className="font-semibold text-lg tracking-wide">{LEVEL_THRESHOLDS[level].label}</p>
-              <p className="text-xs opacity-50">
-                {level !== 'pro'
-                  ? `Promote at ${LEVEL_THRESHOLDS[level].promote} WPM avg`
-                  : 'Maximum level reached'}
-              </p>
+        {/* Level indicator */}
+        {level && LevelIcon && (
+          <div className="flex items-center justify-between mb-8 p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <div className="flex items-center gap-4">
+              <span
+                className="flex shrink-0 items-center justify-center w-11 h-11 rounded-xl border"
+                style={{
+                  backgroundColor: `${levelColor}12`,
+                  color: levelColor,
+                  borderColor: `${levelColor}30`,
+                }}
+              >
+                <LevelIcon size={22} strokeWidth={2.2} />
+              </span>
+              <div>
+                <p className="font-semibold text-lg text-[var(--color-text)]">{LEVEL_THRESHOLDS[level].label}</p>
+                <p className="text-[13px] text-[var(--color-text-secondary)]">
+                  {level !== 'pro'
+                    ? `Promote at ${LEVEL_THRESHOLDS[level].promote} WPM avg`
+                    : 'Maximum level reached'}
+                </p>
+              </div>
             </div>
+            <button
+              onClick={() => setShowLevelModal(true)}
+              className="text-[13px] px-4 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:border-[var(--color-border-hover)] transition-colors"
+            >
+              Change Level
+            </button>
           </div>
-          <button
-            onClick={() => setShowLevelModal(true)}
-            className="text-xs px-3 py-1.5 rounded-lg border border-white/20 hover:border-white/50 transition"
-          >
-            Change Level
-          </button>
+        )}
+
+        {showLevelModal && (
+          <LevelSelectModal
+            onSelect={(l: Level) => { setLevel(l); api.setLevel({ level: l }).catch(() => {}); setShowLevelModal(false); }}
+            onClose={() => setShowLevelModal(false)}
+          />
+        )}
+
+        {/* Summary cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
+          {[
+            { label: 'Best WPM', value: data?.bestWpm || 0, icon: Award, color: 'var(--color-accent)' },
+            { label: 'Avg WPM', value: avgWpm, icon: TrendingUp, color: 'var(--color-text)' },
+            { label: 'Avg Accuracy', value: `${avgAcc}%`, icon: Target, color: 'var(--color-success)' },
+            { label: 'Streak', value: data?.streak || 0, icon: Flame, color: 'var(--color-warning)' },
+          ].map((c, i) => (
+            <motion.div
+              key={c.label}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05, duration: 0.4 }}
+              className="p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-card)] transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <c.icon size={14} style={{ color: c.color }} strokeWidth={1.8} />
+                <span className="text-[11px] uppercase tracking-widest text-[var(--color-text-secondary)] font-semibold">{c.label}</span>
+              </div>
+              <div className="text-3xl font-bold" style={{ color: c.color }}>{c.value}</div>
+            </motion.div>
+          ))}
         </div>
-      )}
 
-      {showLevelModal && (
-        <LevelSelectModal
-          onSelect={(l: Level) => { setLevel(l); api.setLevel({ level: l }).catch(() => {}); setShowLevelModal(false); }}
-          onClose={() => setShowLevelModal(false)}
-        />
-      )}
+        {chartData.length > 0 ? (
+          <>
+            {/* WPM Chart */}
+            <div className="mb-6 p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+              <h2 className="text-[12px] font-semibold mb-5 uppercase tracking-widest text-[var(--color-text-secondary)]">WPM History</h2>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }} />
+                  <YAxis stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }} />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 12, fontSize: 12, color: 'var(--color-text)' }}
+                    labelStyle={{ color: 'var(--color-text-secondary)' }}
+                  />
+                  <Line type="monotone" dataKey="wpm" stroke="var(--color-accent)" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
-        {[
-          { label: 'Best WPM', value: data?.bestWpm || 0, color: 'var(--color-accent)' },
-          { label: 'Avg WPM', value: avgWpm, color: 'var(--color-text)' },
-          { label: 'Avg Accuracy', value: `${avgAcc}%`, color: '#22c55e' },
-          { label: 'Streak', value: `${data?.streak || 0} 🔥`, color: '#f59e0b' },
-        ].map((c) => (
-          <div key={c.label} className="p-4 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div className="text-3xl font-bold" style={{ color: c.color }}>{c.value}</div>
-            <div className="text-xs opacity-50 mt-1 uppercase tracking-widest">{c.label}</div>
+            {/* Accuracy Chart */}
+            <div className="mb-6 p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+              <h2 className="text-[12px] font-semibold mb-5 uppercase tracking-widest text-[var(--color-text-secondary)]">Accuracy History</h2>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }} />
+                  <YAxis domain={[0, 100]} stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }} />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 12, fontSize: 12, color: 'var(--color-text)' }}
+                  />
+                  <Line type="monotone" dataKey="accuracy" stroke="var(--color-success)" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </>
+        ) : (
+          <div className="mb-8 p-12 rounded-2xl text-center border border-dashed border-[var(--color-border)] bg-[var(--color-surface)]">
+            <BarChart3 size={32} className="text-[var(--color-text-secondary)] mx-auto mb-3 opacity-30" />
+            <p className="text-[var(--color-text-secondary)]">No data yet. Complete a test or practice session to see your stats.</p>
           </div>
-        ))}
-      </div>
+        )}
 
-      {chartData.length > 0 ? (
-        <>
-          {/* WPM Chart */}
-          <div className="mb-8 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <h2 className="text-sm font-semibold mb-4 opacity-70 uppercase tracking-widest">WPM History</h2>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" tick={{ fontSize: 11 }} />
-                <YAxis stroke="rgba(255,255,255,0.3)" tick={{ fontSize: 11 }} />
+        {/* Weak Keys */}
+        {topWeakKeys.length > 0 && (
+          <div className="p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <h2 className="text-[12px] font-semibold mb-5 uppercase tracking-widest text-[var(--color-text-secondary)]">Weak Keys</h2>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={topWeakKeys}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                <XAxis dataKey="key" stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 13, fontFamily: 'var(--font-geist, monospace)', fill: 'var(--color-text-secondary)' }} />
+                <YAxis stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }} unit="%" />
                 <Tooltip
-                  contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
-                  labelStyle={{ color: 'rgba(255,255,255,0.5)' }}
+                  contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 12, fontSize: 12, color: 'var(--color-text)' }}
+                  formatter={(v) => [`${v}%`, 'Error Rate']}
                 />
-                <Line type="monotone" dataKey="wpm" stroke="var(--color-accent)" strokeWidth={2} dot={false} />
-              </LineChart>
+                <Bar dataKey="rate" fill="var(--color-error)" radius={[6, 6, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </div>
-
-          {/* Accuracy Chart */}
-          <div className="mb-8 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <h2 className="text-sm font-semibold mb-4 opacity-70 uppercase tracking-widest">Accuracy History</h2>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 100]} stroke="rgba(255,255,255,0.3)" tick={{ fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
-                />
-                <Line type="monotone" dataKey="accuracy" stroke="#22c55e" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </>
-      ) : (
-        <div className="mb-8 p-8 rounded-xl text-center opacity-40" style={{ border: '1px dashed rgba(255,255,255,0.15)' }}>
-          No data yet. Complete a test or practice session to see your stats.
-        </div>
-      )}
-
-      {/* Weak Keys */}
-      {topWeakKeys.length > 0 && (
-        <div className="p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <h2 className="text-sm font-semibold mb-4 opacity-70 uppercase tracking-widest">Weak Keys</h2>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={topWeakKeys}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="key" stroke="rgba(255,255,255,0.3)" tick={{ fontSize: 13, fontFamily: 'monospace' }} />
-              <YAxis stroke="rgba(255,255,255,0.3)" tick={{ fontSize: 11 }} unit="%" />
-              <Tooltip
-                contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
-                formatter={(v) => [`${v}%`, 'Error Rate']}
-              />
-              <Bar dataKey="rate" fill="#ef4444" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+        )}
+      </motion.div>
     </div>
   );
 }

@@ -11,9 +11,9 @@ export interface ThemeConfig {
 }
 
 const DEFAULT_THEME: ThemeConfig = {
-  background: '#0f0f0f',
-  text: '#e2e8f0',
-  accent: '#6366f1',
+  background: '#09090B',
+  text: '#FAFAFA',
+  accent: '#7C5CFF',
   mode: 'dark',
 };
 
