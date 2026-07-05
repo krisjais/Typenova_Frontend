@@ -15,6 +15,7 @@ import {
   User,
   Menu,
   X,
+  Users,
 } from 'lucide-react';
 import ThemePicker from './ThemePicker';
 import Logo from './Logo';
@@ -23,6 +24,7 @@ const NAV_LINKS = [
   { href: '/practice', label: 'Practice', icon: Keyboard },
   { href: '/test', label: 'Test', icon: Gauge },
   { href: '/games', label: 'Games', icon: Gamepad2 },
+  { href: '/friends', label: 'Social', icon: Users },
   { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
   { href: '/leaderboard', label: 'Board', icon: Trophy },
 ];
