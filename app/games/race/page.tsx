@@ -129,6 +129,8 @@ interface Player {
   isAI?: boolean;
   aiWpmGoal?: number;
   aiSlowdown?: number; // active freeze time
+  ready?: boolean;
+  disconnected?: boolean;
 }
 
 interface SparkParticle {
@@ -179,6 +181,40 @@ export default function TypeRacerPage() {
   const [freezes, setFreezes] = useState(0);
   const sessionIdRef = useRef<string | null>(null);
 
+  // Synchronized / Multiplayer additions
+  const [ping, setPing] = useState<number>(0);
+  const [showDebug, setShowDebug] = useState<boolean>(false);
+  const [isFrozen, setIsFrozen] = useState<boolean>(false);
+  const [showTimeoutDialog, setShowTimeoutDialog] = useState<boolean>(false);
+  const [startTimeStamp, setStartTimeStamp] = useState<number | null>(null);
+  const visualProgressRef = useRef<Record<string, number>>({});
+
+  // Toggle debug overlay with ctrl+shift+d
+  useEffect(() => {
+    const handleDebugKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        setShowDebug(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleDebugKey);
+    return () => window.removeEventListener('keydown', handleDebugKey);
+  }, []);
+
+  // Synchronized countdown ticker
+  useEffect(() => {
+    if (!startTimeStamp || lobbyMode !== 'countdown') return;
+
+    const timer = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((startTimeStamp - Date.now()) / 1000));
+      setCountdown(remaining);
+      if (remaining <= 0) {
+        clearInterval(timer);
+      }
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [startTimeStamp, lobbyMode]);
+
   const initializeSession = async (textToType: string) => {
     if (!user) return;
     try {
@@ -221,8 +257,18 @@ export default function TypeRacerPage() {
       s.emit('register_user', { userId: user.id, username: user.username });
     });
 
+    // Latency RTT ping-pong interval
+    const pingInterval = setInterval(() => {
+      s.emit('ping_test', Date.now());
+    }, 3000);
+
+    s.on('pong_test', (sentTimestamp: number) => {
+      setPing(Date.now() - sentTimestamp);
+    });
+
     s.on('queue_joined', () => {
       setLobbyMode('queue');
+      setShowTimeoutDialog(false);
     });
 
     s.on('queue_left', () => {
@@ -230,22 +276,52 @@ export default function TypeRacerPage() {
       resetRaceState();
     });
 
+    s.on('queue_timeout', () => {
+      setShowTimeoutDialog(true);
+    });
+
+    // 1. Handshake Phase: Match Found
     s.on('match_found', (data: { roomId: string; text: string; players: { userId: string; username: string }[] }) => {
       setRoomId(data.roomId);
       setText(data.text);
-      setPlayers(
-        data.players.map((p, idx) => ({
-          userId: p.userId,
-          username: p.username,
-          progress: 0,
-          wpm: 0,
-          accuracy: 100,
-          finished: false,
-          rank: null,
-          color: idx === 0 ? '#ef4444' : idx === 1 ? '#06b6d4' : idx === 2 ? '#eab308' : '#10b981'
-        }))
-      );
+      setStartTimeStamp(null);
+      
+      const newPlayers = data.players.map((p, idx) => ({
+        userId: p.userId,
+        username: p.username,
+        progress: 0,
+        wpm: 0,
+        accuracy: 100,
+        finished: false,
+        ready: false,
+        disconnected: false,
+        rank: null,
+        color: idx === 0 ? '#ef4444' : idx === 1 ? '#06b6d4' : idx === 2 ? '#eab308' : '#10b981'
+      }));
+      setPlayers(newPlayers);
       setLobbyMode('countdown');
+      
+      // Auto-join room on server
+      s.emit('join_room', { roomId: data.roomId });
+    });
+
+    // 2. Handshake Phase: Room Joined Confirm
+    s.on('room_joined', ({ roomId }: { roomId: string }) => {
+      // Simulate brief loading, then emit player ready status
+      setTimeout(() => {
+        s.emit('player_ready', { roomId });
+      }, 500);
+    });
+
+    s.on('player_ready_status', ({ userId, ready }: { userId: string; ready: boolean }) => {
+      setPlayers(prev =>
+        prev.map(p => (p.userId === userId ? { ...p, ready } : p))
+      );
+    });
+
+    // 3. Handshake Phase: Sync Start Clock
+    s.on('start_countdown', ({ startTimeStamp }: { startTimeStamp: number }) => {
+      setStartTimeStamp(startTimeStamp);
     });
 
     s.on('race_countdown', (count: number) => {
@@ -263,19 +339,55 @@ export default function TypeRacerPage() {
       );
     });
 
-    s.on('player_finished', (data: { userId: string; username: string; wpm: number; accuracy: number; rank: number }) => {
+    // Powerup rewards updates
+    s.on('powerup_earned', ({ powerupType }: { powerupType: 'freeze' | 'nitro' }) => {
+      if (powerupType === 'freeze') setFreezes(c => c + 1);
+      else if (powerupType === 'nitro') setNitros(n => n + 1);
+    });
+
+    s.on('powerup_triggered', (data: { senderId: string; senderName: string; powerupType: 'freeze' | 'nitro' }) => {
+      if (data.powerupType === 'freeze') {
+        setIsFrozen(true);
+        synthRef.current?.playScreech();
+        setTimeout(() => setIsFrozen(false), 2500); // 2.5s input freeze
+      } else if (data.powerupType === 'nitro') {
+        synthRef.current?.playNitro();
+      }
+    });
+
+    s.on('player_finished', (data: { userId: string; username: string; wpm: number; accuracy: number; rank: number; forfeited?: boolean }) => {
       setPlayers(prev =>
         prev.map(p => (p.userId === data.userId ? { ...p, finished: true, wpm: data.wpm, accuracy: data.accuracy, rank: data.rank } : p))
       );
     });
 
+    s.on('opponent_status_change', ({ userId, isOnline }: { userId: string; isOnline: boolean }) => {
+      setPlayers(prev =>
+        prev.map(p => (p.userId === userId ? { ...p, disconnected: !isOnline } : p))
+      );
+    });
+
+    s.on('race_reconnect_success', (data: any) => {
+      setRoomId(data.roomId);
+      setText(data.text);
+      setPlayers(data.players.map((p: any, idx: number) => ({
+        ...p,
+        color: idx === 0 ? '#ef4444' : idx === 1 ? '#06b6d4' : idx === 2 ? '#eab308' : '#10b981'
+      })));
+      setLobbyMode('racing');
+      startTimeRef.current = Date.now() - (data.progress || 0) * 100;
+    });
+
     s.on('race_over', (data: { standings: any[] }) => {
       setStandings(data.standings);
       setLobbyMode('finished');
+      clearInterval(pingInterval);
     });
 
-    s.on('opponent_disconnected', (data: { userId: string }) => {
-      setPlayers(prev => prev.filter(p => p.userId !== data.userId));
+    s.on('race_closed', () => {
+      setLobbyMode('customization');
+      resetRaceState();
+      clearInterval(pingInterval);
     });
 
     setSocket(s);
@@ -367,6 +479,7 @@ export default function TypeRacerPage() {
   // Keyboard engine listener
   useEffect(() => {
     if (lobbyMode !== 'racing') return;
+    if (isFrozen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Direct use of Powerups
@@ -418,12 +531,9 @@ export default function TypeRacerPage() {
         setWpm(currentWpm);
         setAccuracy(currentAcc);
 
-        // Calculate progress %
-        const progressPercent = Math.round((nextIdx / text.length) * 100);
-
-        // Broadcast progress if multi
+        // Broadcast progress if multi (sending character index for server-side verification)
         if (gameMode === 'multi' && socket) {
-          socket.emit('race_progress_update', { roomId, progress: progressPercent, wpm: currentWpm, accuracy: currentAcc });
+          socket.emit('race_progress_update', { roomId, index: nextIdx, errors });
         }
 
         // Final check
@@ -446,7 +556,7 @@ export default function TypeRacerPage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [lobbyMode, inputIndex, text, errors, wpm, autoCorrects, nitros, freezes]);
+  }, [lobbyMode, inputIndex, text, errors, wpm, autoCorrects, nitros, freezes, isFrozen, gameMode, socket, roomId]);
 
   // Powerup executables
   const useAutoCorrect = () => {
@@ -463,9 +573,8 @@ export default function TypeRacerPage() {
     const currentWpm = Math.round((nextIdx / 5) / Math.max(0.01, timeMin));
     setWpm(currentWpm);
 
-    const progressPercent = Math.round((nextIdx / text.length) * 100);
     if (gameMode === 'multi' && socket) {
-      socket.emit('race_progress_update', { roomId, progress: progressPercent, wpm: currentWpm, accuracy });
+      socket.emit('race_progress_update', { roomId, index: nextIdx, errors });
     }
 
     if (nextIdx === text.length) {
@@ -492,6 +601,10 @@ export default function TypeRacerPage() {
 
     // Boost WPM stat
     setWpm(prev => prev + 25);
+
+    if (gameMode === 'multi' && socket) {
+      socket.emit('request_use_powerup', { roomId, powerupType: 'nitro' });
+    }
   };
 
   const useFreeze = () => {
@@ -500,6 +613,8 @@ export default function TypeRacerPage() {
 
     if (gameMode === 'single') {
       setPlayers(prev => prev.map(p => p.isAI ? { ...p, aiSlowdown: 180 } : p)); // slowdown AI for 3 seconds (180 frames)
+    } else if (gameMode === 'multi' && socket) {
+      socket.emit('request_use_powerup', { roomId, powerupType: 'freeze' });
     }
   };
 
@@ -703,9 +818,16 @@ export default function TypeRacerPage() {
       // ─── Render Vehicles / Competitors ───
       const currentProgressUser = Math.round((inputIndex / text.length) * 100);
       players.forEach((p, idx) => {
-        const prog = p.userId === user?.id || p.userId === 'local_user' ? currentProgressUser : p.progress;
+        const targetProg = p.userId === user?.id || p.userId === 'local_user' ? currentProgressUser : p.progress;
 
-        const startX = 60 + (prog / 100) * 680;
+        if (visualProgressRef.current[p.userId] === undefined) {
+          visualProgressRef.current[p.userId] = targetProg;
+        } else {
+          // Smooth glide interpolation to prevent car teleportation
+          visualProgressRef.current[p.userId] += (targetProg - visualProgressRef.current[p.userId]) * 0.08;
+        }
+
+        const startX = 60 + (visualProgressRef.current[p.userId] / 100) * 680;
         const startY = 115 + idx * 45;
 
         // Render car shadow
@@ -729,11 +851,17 @@ export default function TypeRacerPage() {
         ctx.arc(startX + 30, startY + 18, 5, 0, Math.PI * 2);
         ctx.fill();
 
-        // Render mini player nametag above car
+        // Render mini player nametag and ready/disconnected status above car
         ctx.font = 'bold 9px monospace';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText(p.username, startX + 20, startY - 4);
+
+        let tag = p.username;
+        if (p.disconnected) {
+          tag += ' (Offline)';
+        }
+        
+        ctx.fillText(tag, startX + 20, startY - 4);
 
         // Exude tire smoke if current user has typo
         if (typo && (p.userId === user?.id || p.userId === 'local_user') && Math.random() < 0.25) {
@@ -1108,7 +1236,16 @@ export default function TypeRacerPage() {
             </div>
 
             {/* Bottom Typing Passage Card */}
-            <div className="glass-card p-6 md:p-8 flex flex-col gap-6">
+            <div className={`glass-card p-6 md:p-8 flex flex-col gap-6 relative overflow-hidden transition-all duration-300 ${isFrozen ? 'border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.15)]' : ''}`}>
+              {/* Frost overlay */}
+              {isFrozen && (
+                <div className="absolute inset-0 bg-cyan-950/20 backdrop-blur-[1px] flex items-center justify-center animate-pulse pointer-events-none">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-cyan-400 flex items-center gap-1.5 bg-black/60 px-3 py-1.5 rounded-lg border border-cyan-500/20 shadow-md">
+                    <Snowflake size={12} className="animate-spin" /> SCREEN FROZEN
+                  </div>
+                </div>
+              )}
+
               <div className="text-lg leading-relaxed font-geist text-[var(--color-text-secondary)] select-none">
                 {/* Typed part */}
                 <span className="text-[var(--color-text)] font-semibold border-b-2 border-[var(--color-accent)] pb-0.5">
@@ -1211,6 +1348,69 @@ export default function TypeRacerPage() {
               </button>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Dev Debug Overlay */}
+      {showDebug && (
+        <div className="fixed bottom-4 left-4 z-50 p-4 rounded-xl border border-zinc-800 bg-zinc-950/95 text-[10px] font-mono text-zinc-400 space-y-1.5 shadow-2xl max-w-xs">
+          <div className="text-zinc-200 border-b border-zinc-900 pb-1 font-bold uppercase tracking-wider">Race Debug Monitor</div>
+          <div>Room ID: <span className="text-cyan-400">{roomId || 'N/A'}</span></div>
+          <div>Lobby State: <span className="text-emerald-400 uppercase">{lobbyMode}</span></div>
+          <div>RTT Latency: <span className="text-amber-500">{ping} ms</span></div>
+          <div>Socket: <span className={socket?.connected ? 'text-emerald-400' : 'text-rose-500'}>{socket?.connected ? 'Connected' : 'Disconnected'}</span></div>
+          <div>Server Time: <span className="text-zinc-200">{new Date().toLocaleTimeString()}</span></div>
+          <div className="border-t border-zinc-900 pt-1 mt-1 font-bold text-zinc-300">Players Status:</div>
+          {players.map(p => (
+            <div key={p.userId} className="flex justify-between gap-4">
+              <span>{p.username.slice(0, 10)}</span>
+              <span>
+                {p.progress.toFixed(0)}% | {p.ready ? 'READY' : 'WAIT'} | {p.disconnected ? 'OFFLINE' : 'ONLINE'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Queue Timeout Dialog */}
+      <AnimatePresence>
+        {showTimeoutDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-sm p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl text-center"
+            >
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-4 text-indigo-400">
+                <Timer size={20} />
+              </div>
+              <h3 className="text-sm font-black uppercase tracking-wider text-[var(--color-text)]">Speedway Match Timeout</h3>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-2 leading-relaxed">
+                Matchmaking is taking a bit longer than expected. Would you like to practice against AI Bots immediately, or continue waiting?
+              </p>
+              <div className="flex gap-2 mt-6">
+                <button
+                  onClick={() => {
+                    leaveQueue();
+                    setGameMode('single');
+                    startSinglePlayer();
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-xs font-bold transition-all cursor-pointer border-none"
+                >
+                  Start vs Bots
+                </button>
+                <button
+                  onClick={() => {
+                    setShowTimeoutDialog(false);
+                  }}
+                  className="flex-1 py-2.5 rounded-xl border border-[var(--color-border)] hover:bg-white/[0.04] text-[var(--color-text)] text-xs font-bold transition-all cursor-pointer bg-transparent"
+                >
+                  Keep Waiting
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
