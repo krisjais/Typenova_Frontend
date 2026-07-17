@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { Trophy, Medal, Flame, Crown, Users, Clock, Calendar, KeyboardIcon, FileText, BookMarked, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { Trophy, Medal, Flame, Crown, Users, Clock, Calendar, KeyboardIcon, FileText, BookMarked, Sparkles, X, ArrowRight } from 'lucide-react';
 
 interface Leader {
   _id: string;
@@ -40,6 +41,22 @@ export default function LeaderboardPage() {
   const [timeFilter, setTimeFilter] = useState<string>('all');
   const [friendsOnly, setFriendsOnly] = useState<boolean>(false);
   const [leaderboardType, setLeaderboardType] = useState<string>('global');
+  const [showBanner, setShowBanner] = useState<boolean>(false);
+  const [showLearnMore, setShowLearnMore] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const dismissed = localStorage.getItem('typenova-season1-banner-dismissed');
+      if (!dismissed) {
+        setShowBanner(true);
+      }
+    }
+  }, []);
+
+  const dismissBanner = () => {
+    localStorage.setItem('typenova-season1-banner-dismissed', 'true');
+    setShowBanner(false);
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -59,6 +76,56 @@ export default function LeaderboardPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-8 pt-24 pb-16">
+      {/* Season 1 Banner */}
+      <AnimatePresence>
+        {showBanner && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-8 overflow-hidden"
+          >
+            <div className="relative p-6 rounded-2xl border border-[var(--color-accent)]/20 bg-gradient-to-br from-[var(--color-accent-muted)]/15 via-[var(--color-accent-muted)]/5 to-transparent flex flex-col md:flex-row md:items-center justify-between gap-5 shadow-sm">
+              {/* Dismiss Button */}
+              <button
+                onClick={dismissBanner}
+                className="absolute top-4 right-4 text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors cursor-pointer border-none bg-transparent"
+              >
+                <X size={16} />
+              </button>
+
+              <div className="flex-1 max-w-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles size={16} className="text-[var(--color-accent)]" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-accent)]">Game Update</span>
+                </div>
+                <h2 className="text-lg font-black text-[var(--color-text)] flex items-center gap-2">
+                  🛡 Season 1 Begins
+                </h2>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-1.5 leading-relaxed">
+                  Welcome to Verified Competition! TypeNova now uses secure server-side verification and anti-cheat protection. To ensure fair competition, all competitive rankings have been reset. Complete an Official Test to earn your first verified ranking.
+                </p>
+                <button
+                  onClick={() => setShowLearnMore(true)}
+                  className="text-[10px] font-extrabold uppercase text-[var(--color-accent)] hover:underline mt-2.5 flex items-center gap-1 cursor-pointer border-none bg-transparent"
+                >
+                  Learn More <ArrowRight size={10} />
+                </button>
+              </div>
+
+              <div className="shrink-0 flex items-center">
+                <Link
+                  href="/test"
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] shadow-sm hover:shadow transition-all cursor-pointer"
+                >
+                  Start Official Test <ArrowRight size={12} />
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -126,7 +193,8 @@ export default function LeaderboardPage() {
             { id: 'practice', label: 'Guided Practice' },
             { id: 'type-racer', label: 'Type Racer' },
             { id: 'zombie-escape', label: 'Zombie Escape' },
-            { id: 'nova-racer', label: 'Nova Racer' }
+            { id: 'nova-racer', label: 'Nova Racer' },
+            { id: 'legacy', label: 'Legacy Leaderboard' }
           ].map((type) => (
             <button
               key={type.id}
@@ -159,8 +227,21 @@ export default function LeaderboardPage() {
           ))}
         </div>
 
+        {/* Legacy Leaderboard Notice */}
+        {leaderboardType === 'legacy' && (
+          <div className="mb-6 p-5 rounded-2xl border border-zinc-800 bg-zinc-950/20 text-xs text-[var(--color-text-secondary)] flex gap-3.5 items-start">
+            <Clock size={18} className="text-[var(--color-accent)] shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-extrabold text-[var(--color-text)] mb-1">Archived Legacy Rankings</h3>
+              <p className="leading-relaxed">
+                This leaderboard is archived. Scores shown here were recorded before the secure anti-cheat system. These rankings are no longer used for active competition.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Personal Rank Notification */}
-        {user && personalRank > 0 && (
+        {user && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -168,7 +249,12 @@ export default function LeaderboardPage() {
           >
             <Sparkles size={14} />
             <span>
-              Your personal rank is <span className="font-extrabold text-base font-orbitron">#{personalRank}</span>{' '}
+              Your personal rank is:{' '}
+              {personalRank > 0 ? (
+                <span className="font-extrabold text-base font-orbitron">#{personalRank}</span>
+              ) : (
+                <span className="font-extrabold text-base font-orbitron">Not Ranked</span>
+              )}{' '}
               {friendsOnly ? 'among your friends' : 'worldwide'} in this filter!
             </span>
           </motion.div>
@@ -292,6 +378,63 @@ export default function LeaderboardPage() {
           </div>
         )}
       </motion.div>
+
+      {/* Learn More Modal */}
+      <AnimatePresence>
+        {showLearnMore && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-md p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl relative"
+            >
+              <button
+                onClick={() => setShowLearnMore(false)}
+                className="absolute top-4 right-4 text-[var(--color-text-secondary)] hover:text-[var(--color-text)] border-none bg-transparent cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+              
+              <div className="flex items-center gap-2.5 mb-5 border-b border-[var(--color-border)] pb-3">
+                <Sparkles size={18} className="text-[var(--color-accent)]" />
+                <h3 className="text-md font-extrabold text-[var(--color-text)]">Season 1 & Verification</h3>
+              </div>
+
+              <div className="space-y-4 text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                <div>
+                  <h4 className="font-extrabold text-[var(--color-text)] mb-1">Why were rankings reset?</h4>
+                  <p>
+                    Before the update, competitive scores were validated client-side, which permitted text modifications and speed manipulation. All previous rankings were archived to legacy status to guarantee a fair start for Season 1.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-extrabold text-[var(--color-text)] mb-1">How does server verification work?</h4>
+                  <p>
+                    When starting a test, the server generates a token and hashes the text. Upon completion, the backend verifies the keystroke metrics, duration, and content matches against the original hash before saving.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-extrabold text-[var(--color-text)] mb-1">Why don&apos;t custom texts qualify?</h4>
+                  <p>
+                    Custom texts are imported by users and cannot be standardized. They remain available for personal practice but do not contribute to competitive rankings or global leaderboards.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowLearnMore(false)}
+                className="mt-6 w-full py-3 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-card)] text-xs font-bold text-[var(--color-text)] transition-colors cursor-pointer bg-transparent"
+              >
+                Close
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

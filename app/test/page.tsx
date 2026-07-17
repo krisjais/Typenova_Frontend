@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 import TypingArea from '@/components/TypingArea';
 import LevelUpToast from '@/components/LevelUpToast';
 import { calcWPM, calcAccuracy, analyzeWeakKeys, getTextForLevel, LEVEL_THRESHOLDS, Level } from '@/utils/typing';
@@ -29,7 +30,8 @@ import {
   X,
   Loader,
   BookMarked,
-  Info
+  Info,
+  Sparkles
 } from 'lucide-react';
 import FontSizeControl, { useFontSize } from '@/components/FontSizeControl';
 import LiveKeyboard from '@/components/LiveKeyboard';
@@ -80,6 +82,8 @@ export default function TestPage() {
   const [wpmHistory, setWpmHistory] = useState<{ t: number; wpm: number }[]>([]);
   const [promotedTo, setPromotedTo] = useState<Level | null>(null);
   const [showKeyboard, setShowKeyboard] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationDetails, setCelebrationDetails] = useState<{ rank: number; wpm: number; accuracy: number } | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsedRef = useRef(0);
 
@@ -240,7 +244,20 @@ export default function TestPage() {
         weakKeys: Object.entries(analysis).map(([key, v]) => ({ key, ...v })),
         text,
         consistency: 90
-      }).then(() => {
+      }).then((res: any) => {
+        if (res.firstVerified) {
+          setCelebrationDetails({
+            rank: res.rank,
+            wpm: res.wpm,
+            accuracy: res.accuracy
+          });
+          setShowCelebration(true);
+          confetti({
+            particleCount: 150,
+            spread: 80,
+            origin: { y: 0.6 }
+          });
+        }
         api.getStats().then((d) => {
           const stats = (d as { stats: { wpm: number }[] }).stats || [];
           const promoted = checkAndPromote(stats.slice(-10).map((s) => s.wpm));
@@ -962,6 +979,67 @@ export default function TestPage() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* First Verified Score Celebration Modal */}
+      <AnimatePresence>
+        {showCelebration && celebrationDetails && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-sm p-6 rounded-2xl border border-[var(--color-accent)]/20 bg-gradient-to-b from-[var(--color-surface)] to-[var(--color-card)] shadow-2xl text-center relative"
+            >
+              <button
+                onClick={() => setShowCelebration(false)}
+                className="absolute top-4 right-4 text-[var(--color-text-secondary)] hover:text-[var(--color-text)] border-none bg-transparent cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+
+              <div className="mx-auto w-12 h-12 rounded-full bg-[var(--color-accent-muted)]/30 flex items-center justify-center mb-4">
+                <Sparkles size={24} className="text-[var(--color-accent)]" />
+              </div>
+
+              <h2 className="text-lg font-black text-[var(--color-text)]">
+                🎉 Welcome to Season 1!
+              </h2>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-2 leading-relaxed px-2">
+                Your first verified score has been recorded. You are now eligible for the official competitive leaderboard!
+              </p>
+
+              <div className="grid grid-cols-3 gap-3 my-6">
+                <div className="p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                  <span className="text-[9px] uppercase font-bold text-[var(--color-text-secondary)] font-sans">Rank</span>
+                  <p className="text-md font-bold mt-1 text-[var(--color-text)] font-orbitron">
+                    #{celebrationDetails.rank > 0 ? celebrationDetails.rank : 'Not Ranked'}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                  <span className="text-[9px] uppercase font-bold text-[var(--color-text-secondary)] font-sans">WPM</span>
+                  <p className="text-md font-bold mt-1 text-[var(--color-accent)] font-orbitron">
+                    {celebrationDetails.wpm}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                  <span className="text-[9px] uppercase font-bold text-[var(--color-text-secondary)] font-sans">Accuracy</span>
+                  <p className="text-md font-bold mt-1 text-emerald-400 font-orbitron">
+                    {celebrationDetails.accuracy}%
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowCelebration(false)}
+                className="w-full py-3 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-xs font-bold transition-colors cursor-pointer border-none"
+              >
+                Let&apos;s Go!
+              </button>
             </motion.div>
           </div>
         )}

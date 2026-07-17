@@ -36,6 +36,7 @@ interface Stat {
   accuracy: number;
   errors: number;
   mode: string;
+  subtype?: string;
   date: string;
 }
 
@@ -50,7 +51,8 @@ interface StatsData {
   weakKeys: WeakKey[];
   bestWpm: number;
   streak: number;
-  achievements?: { name: string; unlockedAt: string }[];
+  xp?: number;
+  achievements?: { name: string; unlockedAt: string; legacy?: boolean }[];
   raceWins?: number;
   raceLosses?: number;
 }
@@ -165,7 +167,8 @@ export default function DashboardPage() {
   const testCount = testList.length;
   const raceWins = data?.raceWins || 0;
   const maxAcc = testList.length ? Math.max(...testList.map(s => s.accuracy)) : 0;
-  const unlockedAchievementNames = data?.achievements ? data.achievements.map(a => a.name) : [];
+  const unlockedAchievementsMap = new Map((data?.achievements || []).map(a => [a.name, a]));
+  const unlockedAchievementNames = Array.from(unlockedAchievementsMap.keys());
 
   const getAchievementProgress = (achName: string) => {
     switch (achName) {
@@ -294,43 +297,86 @@ export default function DashboardPage() {
               </div>
             </div>
             
-            <div className="mt-6 border-t border-[var(--color-border)] pt-4">
+            <div className="mt-4">
               <div className="flex justify-between text-[10px] text-[var(--color-text-secondary)] mb-1.5 font-bold uppercase">
                 <span>Level Progress</span>
                 <span>{(data?.xp || 0) % 1000} / 1000 XP</span>
               </div>
-              <div className="w-full bg-[var(--color-card)] h-1.5 rounded-full overflow-hidden border border-[var(--color-border)]">
+              <div className="w-full bg-[var(--color-card)] h-1.5 rounded-full overflow-hidden border border-[var(--color-border)] mb-4">
                 <div
                   className="bg-[var(--color-accent)] h-full rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(100, (((data?.xp || 0) % 1000) / 1000) * 100)}%` }}
                 />
               </div>
+
+              {/* Career Totals Grid */}
+              <div className="pt-3 border-t border-[var(--color-border)] grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-[9px] uppercase font-bold text-[var(--color-text-secondary)]">Career Words</p>
+                  <p className="text-xs font-black text-[var(--color-text)] font-mono">
+                    {(data as any)?.summary?.career?.totalWords || 0}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] uppercase font-bold text-[var(--color-text-secondary)]">Career Hours</p>
+                  <p className="text-xs font-black text-[var(--color-text)] font-mono">
+                    {(((data as any)?.summary?.career?.totalTime || 0) / 3600).toFixed(1)}h
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] uppercase font-bold text-[var(--color-text-secondary)]">Total Runs</p>
+                  <p className="text-xs font-black text-[var(--color-text)] font-mono">
+                    {(data as any)?.summary?.career?.totalSessions || 0}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Competitive (Official) Card */}
-          <div className="p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
-            <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3 mb-4">
-              <span className="text-xs uppercase font-extrabold tracking-widest text-[var(--color-text-secondary)]">Competitive Stats</span>
-              <Award size={14} className="text-[var(--color-accent)]" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Best WPM</p>
-                <p className="text-2xl font-black text-[var(--color-accent)] font-orbitron">{(data as any)?.summary?.official?.bestWpm || data?.bestWpm || 0}</p>
+          <div className="p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3 mb-4">
+                <span className="text-xs uppercase font-extrabold tracking-widest text-[var(--color-text-secondary)]">Competitive Stats</span>
+                <Award size={14} className="text-[var(--color-accent)]" />
               </div>
-              <div>
-                <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Global Rank</p>
-                <p className="text-2xl font-black text-[var(--color-text)] font-orbitron">#{(data as any)?.summary?.official?.rank || '-'}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Avg Accuracy</p>
-                <p className="text-2xl font-black text-emerald-400 font-orbitron">{(data as any)?.summary?.official?.accuracy || 0}%</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Official Sessions</p>
-                <p className="text-2xl font-black text-[var(--color-text-secondary)] font-orbitron">{(data as any)?.summary?.official?.sessions || 0}</p>
-              </div>
+
+              {((data as any)?.summary?.official?.sessions || 0) === 0 ? (
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                  <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-4 leading-relaxed">
+                    No verified competitive score yet.
+                  </p>
+                  <Link
+                    href="/test"
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-extrabold uppercase bg-[var(--color-accent-muted)] border border-[var(--color-accent)]/10 text-[var(--color-text)] hover:bg-[var(--color-accent)] hover:text-white transition-all cursor-pointer"
+                  >
+                    Start Official Test <ArrowRight size={10} />
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Best WPM</p>
+                    <p className="text-2xl font-black text-[var(--color-accent)] font-orbitron">{(data as any)?.summary?.official?.bestWpm || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Global Rank</p>
+                    <p className="text-2xl font-black text-[var(--color-text)] font-orbitron">
+                      {typeof (data as any)?.summary?.official?.rank === 'number'
+                        ? `#${(data as any)?.summary?.official?.rank}`
+                        : (data as any)?.summary?.official?.rank || 'Not Ranked'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Avg Accuracy</p>
+                    <p className="text-2xl font-black text-emerald-400 font-orbitron">{(data as any)?.summary?.official?.accuracy || 0}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Verified Sessions</p>
+                    <p className="text-2xl font-black text-[var(--color-text-secondary)] font-orbitron">{(data as any)?.summary?.official?.sessions || 0}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -477,6 +523,8 @@ export default function DashboardPage() {
                   const unlocked = unlockedAchievementNames.includes(ach.name);
                   const progress = getAchievementProgress(ach.name);
                   const Icon = ach.icon;
+                  const achievementData = unlockedAchievementsMap.get(ach.name);
+                  const isLegacy = achievementData?.legacy === true;
 
                   return (
                     <div
@@ -495,12 +543,23 @@ export default function DashboardPage() {
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-[var(--color-text)] truncate">{ach.name}</span>
                             {unlocked ? (
-                              <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
-                                Unlocked
-                              </span>
+                              <div className="flex flex-col items-end gap-1">
+                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${
+                                  isLegacy 
+                                    ? 'text-amber-500 bg-amber-500/10 border border-amber-500/20' 
+                                    : 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20'
+                                }`}>
+                                  {isLegacy ? 'Legacy Achievement' : 'Unlocked'}
+                                </span>
+                                {isLegacy && (
+                                  <span className="text-[8px] text-[var(--color-text-secondary)]">
+                                    Recorded before Season 1
+                                  </span>
+                                )}
+                              </div>
                             ) : (
                               <span className="text-[9px] font-mono text-[var(--color-text-secondary)]">
-                                {progress.current} / {progress.target}
+                                  {progress.current} / {progress.target}
                               </span>
                             )}
                           </div>
