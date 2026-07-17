@@ -177,6 +177,20 @@ export default function TypeRacerPage() {
   const [autoCorrects, setAutoCorrects] = useState(0);
   const [nitros, setNitros] = useState(0);
   const [freezes, setFreezes] = useState(0);
+  const sessionIdRef = useRef<string | null>(null);
+
+  const initializeSession = async (textToType: string) => {
+    if (!user) return;
+    try {
+      const res: any = await api.startStatsSession({
+        subtype: 'type-racer',
+        text: textToType
+      });
+      sessionIdRef.current = res.sessionId;
+    } catch (err) {
+      console.error('Failed to initialize type racer session:', err);
+    }
+  };
 
   // Canvas loop state
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -284,6 +298,7 @@ export default function TypeRacerPage() {
     setRoomId('local_race');
     const randomText = PRACTICE_PASSAGES[Math.floor(Math.random() * PRACTICE_PASSAGES.length)];
     setText(randomText);
+    initializeSession(randomText);
 
     // AI speed profile
     const aiSpeedMap = {
@@ -511,15 +526,19 @@ export default function TypeRacerPage() {
 
       // Save stats locally on DB
       try {
-        await api.saveStats({
-          wpm: finalWpm,
-          accuracy: finalAcc,
-          errors,
-          mode: 'practice',
-          duration: startTimeRef.current ? Math.round((Date.now() - startTimeRef.current) / 1000) : 60,
-          category: 'Type Racer',
-          difficulty: aiLevel.toUpperCase()
-        });
+        if (user && sessionIdRef.current) {
+          await api.saveStats({
+            sessionId: sessionIdRef.current,
+            wpm: finalWpm,
+            accuracy: finalAcc,
+            errors,
+            mode: 'practice',
+            duration: startTimeRef.current ? Math.round((Date.now() - startTimeRef.current) / 1000) : 60,
+            category: 'Type Racer',
+            difficulty: aiLevel.toUpperCase(),
+            text
+          });
+        }
       } catch (err) {
         console.error('Failed to save racer stats:', err);
       }

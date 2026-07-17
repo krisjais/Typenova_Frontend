@@ -37,7 +37,36 @@ export default function PracticePage() {
   const [saved, setSaved] = useState(false);
   const [promotedTo, setPromotedTo] = useState<Level | null>(null);
   const [showKeyboard, setShowKeyboard] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const initializeSession = useCallback(async (useWeakKeys = false) => {
+    if (!user) {
+      setText(useWeakKeys && weakKeys.length ? generateWeakKeyPractice(weakKeys) : getTextForLevel(effectiveLevel));
+      return;
+    }
+    try {
+      let customText = '';
+      if (useWeakKeys && weakKeys.length) {
+        customText = generateWeakKeyPractice(weakKeys);
+      }
+      const res: any = await api.startStatsSession({
+        subtype: 'practice',
+        language: 'English',
+        difficulty: effectiveLevel.toUpperCase(),
+        text: customText || undefined
+      });
+      setSessionId(res.sessionId);
+      if (res.text) {
+        setText(res.text);
+      } else {
+        setText(customText || getTextForLevel(effectiveLevel));
+      }
+    } catch (err) {
+      console.error('Failed to start practice session:', err);
+      setText(useWeakKeys && weakKeys.length ? generateWeakKeyPractice(weakKeys) : getTextForLevel(effectiveLevel));
+    }
+  }, [user, effectiveLevel, weakKeys]);
 
   useEffect(() => {
     reset();
@@ -93,10 +122,13 @@ export default function PracticePage() {
       const analysis = analyzeWeakKeys(typed, text);
       const wk = Object.entries(analysis).filter(([, v]) => v.errorCount > 0).map(([k]) => k);
       setWeakKeys(wk);
-      if (user) {
+      if (user && sessionId) {
         api.saveStats({
+          sessionId,
           wpm, accuracy, errors, mode: 'practice', duration: elapsed,
           weakKeys: Object.entries(analysis).map(([key, v]) => ({ key, ...v })),
+          text,
+          consistency: 90
         }).then(() => {
           api.getStats().then((d) => {
             const stats = (d as { stats: { wpm: number }[] }).stats || [];
@@ -106,7 +138,7 @@ export default function PracticePage() {
         }).catch(console.error);
       }
     }
-  }, [isComplete]);
+  }, [isComplete, user, sessionId, wpm, accuracy, errors, elapsed, typed, text, checkAndPromote, saved]);
 
   const handleType = useCallback((t: string) => {
     if (!active) setActive(true);
@@ -115,7 +147,7 @@ export default function PracticePage() {
 
   const reset = (useWeakKeys = false) => {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    setText(useWeakKeys && weakKeys.length ? generateWeakKeyPractice(weakKeys) : getTextForLevel(effectiveLevel));
+    initializeSession(useWeakKeys);
     setTyped('');
     setActive(false);
     setElapsed(0);

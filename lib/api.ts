@@ -18,15 +18,17 @@ export const api = {
   signup: (body: object) => request('/api/auth/signup', { method: 'POST', body: JSON.stringify(body) }),
   login: (body: object) => request('/api/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   getMe: () => request('/api/auth/me'),
+  startStatsSession: (body: object) => request('/api/stats/start', { method: 'POST', body: JSON.stringify(body) }),
   saveStats: (body: object) => request('/api/stats/save', { method: 'POST', body: JSON.stringify(body) }),
   getStats: () => request('/api/stats'),
-  getLeaderboard: (params?: { category?: string; timeFilter?: string; friendsOnly?: boolean }) => {
+  getLeaderboard: (params?: { category?: string; timeFilter?: string; friendsOnly?: boolean; leaderboardType?: string }) => {
     let url = '/api/leaderboard';
     if (params) {
       const q = new URLSearchParams();
       if (params.category) q.set('category', params.category);
       if (params.timeFilter) q.set('timeFilter', params.timeFilter);
       if (params.friendsOnly) q.set('friendsOnly', String(params.friendsOnly));
+      if (params.leaderboardType) q.set('leaderboardType', params.leaderboardType);
       const qs = q.toString();
       if (qs) url += `?${qs}`;
     }

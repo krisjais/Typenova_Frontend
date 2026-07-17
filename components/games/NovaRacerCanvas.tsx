@@ -257,6 +257,19 @@ export default function NovaRacerCanvas() {
 
   // Game States
   const [gameState, setGameState] = useState<'MENU' | 'CUSTOMIZATION' | 'SETTINGS' | 'MATCHMAKING' | 'COUNTDOWN' | 'PLAYING' | 'FINISHED'>('MENU');
+  const sessionIdRef = useRef<string | null>(null);
+
+  const initializeSession = async () => {
+    if (!user) return;
+    try {
+      const res: any = await api.startStatsSession({
+        subtype: 'nova-racer'
+      });
+      sessionIdRef.current = res.sessionId;
+    } catch (err) {
+      console.error('Failed to initialize nova racer session:', err);
+    }
+  };
   
   // Customization wallets
   const [coins, setCoins] = useState<number>(0);
@@ -377,6 +390,7 @@ export default function NovaRacerCanvas() {
   // ─── Matchmaking Simulation ───────────
   const startMatchmaking = () => {
     setGameState('MATCHMAKING');
+    initializeSession();
     
     // Setup simulated opponents
     const names = ['TurboType', 'VelocityMax', 'GearShift', 'HyperWPM', 'DriftKing', 'CarbonCruiser', 'ApexRacer'];
@@ -846,8 +860,9 @@ export default function NovaRacerCanvas() {
     const newXp = xp + xpEarned;
     saveProfileData(newCoins, newXp);
 
-    if (user) {
+    if (user && sessionIdRef.current) {
       api.saveStats({
+        sessionId: sessionIdRef.current,
         wpm: finalWpm,
         accuracy: accuracy,
         errors: stats.totalKeystrokes - stats.correctKeystrokes,

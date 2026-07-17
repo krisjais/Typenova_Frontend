@@ -256,28 +256,148 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
-          {[
-            { label: 'Best WPM', value: data?.bestWpm || 0, icon: Award, color: 'var(--color-accent)' },
-            { label: 'Avg WPM', value: avgWpm, icon: TrendingUp, color: 'var(--color-text)' },
-            { label: 'Avg Accuracy', value: `${avgAcc}%`, icon: Target, color: 'var(--color-success)' },
-            { label: 'Streak', value: data?.streak || 0, icon: Flame, color: 'var(--color-warning)' },
-          ].map((c, i) => (
-            <motion.div
-              key={c.label}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05, duration: 0.4 }}
-              className="p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-card)] transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <c.icon size={14} style={{ color: c.color }} strokeWidth={1.8} />
-                <span className="text-[11px] uppercase tracking-widest text-[var(--color-text-secondary)] font-semibold">{c.label}</span>
+        {/* Profile / Career Status Card */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Career Column */}
+          <div className="p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3 mb-4">
+                <span className="text-xs uppercase font-extrabold tracking-widest text-[var(--color-text-secondary)]">Career Summary</span>
+                <Sparkles size={14} className="text-[var(--color-accent)]" />
               </div>
-              <div className="text-3xl font-bold" style={{ color: c.color }}>{c.value}</div>
-            </motion.div>
-          ))}
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-[var(--color-text-secondary)]">Typing Level</span>
+                  <span className="text-xs font-bold uppercase px-2 py-0.5 rounded bg-[var(--color-accent-muted)] border border-[var(--color-accent)]/10 text-[var(--color-text)]">
+                    {level || 'beginner'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-[var(--color-text-secondary)]">Career Experience</span>
+                  <span className="text-xs font-bold text-[var(--color-text)] font-mono">
+                    {data?.xp || 0} XP
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-[var(--color-text-secondary)]">Streak Days</span>
+                  <span className="text-xs font-bold text-[var(--color-warning)] flex items-center gap-1">
+                    <Flame size={12} fill="currentColor" /> {data?.streak || 0} days
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-[var(--color-text-secondary)]">Achievements</span>
+                  <span className="text-xs font-bold text-[var(--color-success)]">
+                    {unlockedAchievementNames.length} / 5 unlocked
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 border-t border-[var(--color-border)] pt-4">
+              <div className="flex justify-between text-[10px] text-[var(--color-text-secondary)] mb-1.5 font-bold uppercase">
+                <span>Level Progress</span>
+                <span>{(data?.xp || 0) % 1000} / 1000 XP</span>
+              </div>
+              <div className="w-full bg-[var(--color-card)] h-1.5 rounded-full overflow-hidden border border-[var(--color-border)]">
+                <div
+                  className="bg-[var(--color-accent)] h-full rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, (((data?.xp || 0) % 1000) / 1000) * 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Competitive (Official) Card */}
+          <div className="p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3 mb-4">
+              <span className="text-xs uppercase font-extrabold tracking-widest text-[var(--color-text-secondary)]">Competitive Stats</span>
+              <Award size={14} className="text-[var(--color-accent)]" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Best WPM</p>
+                <p className="text-2xl font-black text-[var(--color-accent)] font-orbitron">{(data as any)?.summary?.official?.bestWpm || data?.bestWpm || 0}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Global Rank</p>
+                <p className="text-2xl font-black text-[var(--color-text)] font-orbitron">#{(data as any)?.summary?.official?.rank || '-'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Avg Accuracy</p>
+                <p className="text-2xl font-black text-emerald-400 font-orbitron">{(data as any)?.summary?.official?.accuracy || 0}%</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Official Sessions</p>
+                <p className="text-2xl font-black text-[var(--color-text-secondary)] font-orbitron">{(data as any)?.summary?.official?.sessions || 0}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Practice Card */}
+          <div className="p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3 mb-4">
+              <span className="text-xs uppercase font-extrabold tracking-widest text-[var(--color-text-secondary)]">Practice Stats</span>
+              <Clock size={14} className="text-zinc-500" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Hours Practiced</p>
+                <p className="text-2xl font-black text-[var(--color-text)] font-orbitron">
+                  {(((data as any)?.summary?.practice?.totalTime || 0) / 3600).toFixed(1)}h
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Words Typed</p>
+                <p className="text-2xl font-black text-[var(--color-text)] font-orbitron">{(data as any)?.summary?.practice?.totalWords || 0}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Chars Typed</p>
+                <p className="text-2xl font-black text-[var(--color-text)] font-orbitron">{(data as any)?.summary?.practice?.totalChars || 0}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Imported Practice</p>
+                <p className="text-2xl font-black text-[var(--color-text-secondary)] font-orbitron">{(data as any)?.summary?.practice?.sessions || 0}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Games Stats Card */}
+        <div className="p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] mb-8">
+          <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3 mb-4">
+            <span className="text-xs uppercase font-extrabold tracking-widest text-[var(--color-text-secondary)]">Game Standings</span>
+            <Trophy size={14} className="text-[var(--color-warning)]" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-xl bg-[var(--color-card)] border border-[var(--color-border)]">
+              <span className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Zombie Escapes</span>
+              <p className="text-xl font-bold mt-1 text-[var(--color-text)] font-orbitron">
+                { (data?.stats || []).filter(s => s.subtype === 'zombie-escape').length }
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-[var(--color-card)] border border-[var(--color-border)]">
+              <span className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Nova Racer Wins</span>
+              <p className="text-xl font-bold mt-1 text-[var(--color-accent)] font-orbitron">
+                { data?.raceWins || 0 }
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-[var(--color-card)] border border-[var(--color-border)]">
+              <span className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Type Racer WPM</span>
+              <p className="text-xl font-bold mt-1 text-emerald-400 font-orbitron">
+                { (() => {
+                  const trStats = (data?.stats || []).filter(s => s.subtype === 'type-racer');
+                  return trStats.length ? Math.max(...trStats.map(s => s.wpm)) : 0;
+                })() }
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-[var(--color-card)] border border-[var(--color-border)]">
+              <span className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">Rocket Rush</span>
+              <p className="text-xs font-semibold mt-2.5 text-[var(--color-text-secondary)] italic">
+                Coming Soon
+              </p>
+            </div>
+          </div>
         </div>
 
         {chartData.length > 0 ? (

@@ -39,13 +39,15 @@ export default function LeaderboardPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [timeFilter, setTimeFilter] = useState<string>('all');
   const [friendsOnly, setFriendsOnly] = useState<boolean>(false);
+  const [leaderboardType, setLeaderboardType] = useState<string>('global');
 
   useEffect(() => {
     setLoading(true);
     api.getLeaderboard({
       category: categoryFilter === 'All' ? undefined : categoryFilter,
       timeFilter,
-      friendsOnly: friendsOnly && user ? true : undefined
+      friendsOnly: friendsOnly && user ? true : undefined,
+      leaderboardType
     })
       .then((d: any) => {
         setLeaders(d.leaderboard || []);
@@ -53,7 +55,7 @@ export default function LeaderboardPage() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [categoryFilter, timeFilter, friendsOnly, user]);
+  }, [categoryFilter, timeFilter, friendsOnly, leaderboardType, user]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-8 pt-24 pb-16">
@@ -63,14 +65,16 @@ export default function LeaderboardPage() {
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[var(--color-accent-muted)] flex items-center justify-center">
               <Trophy size={20} className="text-[var(--color-accent)]" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[var(--color-text)]">Leaderboard</h1>
-              <p className="text-sm text-[var(--color-text-secondary)]">Compare speeds across categories, periods, and friendships</p>
+              <h1 className="text-2xl font-bold text-[var(--color-text)]">Leaderboards</h1>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
+                Only official tests qualify. Custom imported texts are excluded to maintain fair rankings.
+              </p>
             </div>
           </div>
 
@@ -97,6 +101,7 @@ export default function LeaderboardPage() {
                 { id: 'all', label: 'All-Time' },
                 { id: 'monthly', label: 'Monthly' },
                 { id: 'weekly', label: 'Weekly' },
+                { id: 'daily', label: 'Daily' },
               ].map((t) => (
                 <button
                   key={t.id}
@@ -112,6 +117,29 @@ export default function LeaderboardPage() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Leaderboard Type Tabs */}
+        <div className="flex flex-wrap gap-1.5 mb-4 border-b border-[var(--color-border)] pb-3">
+          {[
+            { id: 'global', label: 'Global (Competitive)' },
+            { id: 'practice', label: 'Guided Practice' },
+            { id: 'type-racer', label: 'Type Racer' },
+            { id: 'zombie-escape', label: 'Zombie Escape' },
+            { id: 'nova-racer', label: 'Nova Racer' }
+          ].map((type) => (
+            <button
+              key={type.id}
+              onClick={() => setLeaderboardType(type.id)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                leaderboardType === type.id
+                  ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)]/20 text-[var(--color-text)] font-extrabold shadow-sm'
+                  : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)]'
+              }`}
+            >
+              {type.label}
+            </button>
+          ))}
         </div>
 
         {/* Category Tabs */}

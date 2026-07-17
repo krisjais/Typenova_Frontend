@@ -281,6 +281,19 @@ export default function ZombieEscapeCanvas() {
   const [wpm, setWpm] = useState(0);
   const [accuracy, setAccuracy] = useState(100);
   const [xpEarned, setXpEarned] = useState(0);
+  const sessionIdRef = useRef<string | null>(null);
+
+  const initializeSession = async () => {
+    if (!user) return;
+    try {
+      const res: any = await api.startStatsSession({
+        subtype: 'zombie-escape'
+      });
+      sessionIdRef.current = res.sessionId;
+    } catch (err) {
+      console.error('Failed to initialize zombie escape session:', err);
+    }
+  };
 
   // Weapons State
   const [selectedWeapon, setSelectedWeapon] = useState<'pistol' | 'shotgun' | 'rifle' | 'laser' | 'rocket'>('pistol');
@@ -410,6 +423,7 @@ export default function ZombieEscapeCanvas() {
       totalKeystrokes.current = 0;
       correctKeystrokes.current = 0;
       startTime.current = Date.now();
+      initializeSession();
     }
     if (synthRef.current) {
       synthRef.current.playUpgrade();
@@ -788,15 +802,18 @@ export default function ZombieEscapeCanvas() {
 
     // Save stats locally on DB
     try {
-      await api.saveStats({
-        wpm,
-        accuracy,
-        errors: totalKeystrokes.current - correctKeystrokes.current,
-        mode: 'practice',
-        duration: startTime.current ? Math.round((Date.now() - startTime.current) / 1000) : 60,
-        category: 'Zombie Escape',
-        difficulty: difficulty.toUpperCase()
-      });
+      if (user && sessionIdRef.current) {
+        await api.saveStats({
+          sessionId: sessionIdRef.current,
+          wpm,
+          accuracy,
+          errors: totalKeystrokes.current - correctKeystrokes.current,
+          mode: 'practice',
+          duration: startTime.current ? Math.round((Date.now() - startTime.current) / 1000) : 60,
+          category: 'Zombie Escape',
+          difficulty: difficulty.toUpperCase()
+        });
+      }
     } catch (err) {
       console.error('Failed to save zombie escape stats:', err);
     }

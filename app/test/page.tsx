@@ -28,7 +28,8 @@ import {
   BookOpen,
   X,
   Loader,
-  BookMarked
+  BookMarked,
+  Info
 } from 'lucide-react';
 import FontSizeControl, { useFontSize } from '@/components/FontSizeControl';
 import LiveKeyboard from '@/components/LiveKeyboard';
@@ -88,6 +89,32 @@ export default function TestPage() {
   const [language, setLanguage] = useState<string>('English');
   const [customTexts, setCustomTexts] = useState<any[]>([]);
   const [activePracticeText, setActivePracticeText] = useState<PracticeText | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  const initializeSession = useCallback(async () => {
+    if (!user) {
+      setText(activePracticeText ? activePracticeText.content : generateText());
+      return;
+    }
+    try {
+      const res: any = await api.startStatsSession({
+        subtype: selectedCategory === 'Custom' ? 'custom' : 'official',
+        category: selectedCategory,
+        difficulty: selectedDifficulty,
+        language: language,
+        textId: activePracticeText ? (activePracticeText.id || (activePracticeText as any)._id) : undefined
+      });
+      setSessionId(res.sessionId);
+      if (res.text) {
+        setText(res.text);
+      } else {
+        setText(activePracticeText ? activePracticeText.content : generateText());
+      }
+    } catch (err) {
+      console.error('Failed to start session:', err);
+      setText(activePracticeText ? activePracticeText.content : generateText());
+    }
+  }, [user, selectedCategory, selectedDifficulty, language, activePracticeText]);
 
   // Upload modal states
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -204,12 +231,15 @@ export default function TestPage() {
   useEffect(() => {
     if (!finished || !started) return;
     const analysis = analyzeWeakKeys(typed, text);
-    if (user) {
+    if (user && sessionId) {
       api.saveStats({
+        sessionId,
         wpm, accuracy, errors,
         mode: 'test',
         duration: mode === 'time' ? timeDuration : elapsedRef.current,
         weakKeys: Object.entries(analysis).map(([key, v]) => ({ key, ...v })),
+        text,
+        consistency: 90
       }).then(() => {
         api.getStats().then((d) => {
           const stats = (d as { stats: { wpm: number }[] }).stats || [];
@@ -218,7 +248,7 @@ export default function TestPage() {
         }).catch(() => {});
       }).catch(console.error);
     }
-  }, [finished, started, wpm, accuracy, errors, mode, timeDuration, text, typed, user, checkAndPromote]);
+  }, [finished, started, wpm, accuracy, errors, mode, timeDuration, text, typed, user, checkAndPromote, sessionId]);
 
   // Pause timer when switching tabs
   useEffect(() => {
@@ -274,11 +304,7 @@ export default function TestPage() {
     if (intervalRef.current) clearInterval(intervalRef.current);
     elapsedRef.current = 0;
     setTimeLeft(timeDuration);
-    if (activePracticeText) {
-      setText(activePracticeText.content);
-    } else {
-      setText(generateText());
-    }
+    initializeSession();
     setTyped('');
     setStarted(false);
     setFinished(false);
@@ -541,6 +567,41 @@ export default function TestPage() {
                                   {activePracticeText.category}
                                 </span>
                               </div>
+
+                              {/* Custom Practice Warning Notice */}
+                              {selectedCategory === 'Custom' && (
+                                <div className="mb-4 p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 text-xs text-[var(--color-text-secondary)]">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="font-extrabold text-amber-400 text-sm flex items-center gap-1.5">
+                                      Custom Practice
+                                    </span>
+                                    <div className="relative group cursor-pointer">
+                                      <Info size={14} className="text-[var(--color-text-secondary)] hover:text-amber-400 transition-colors" />
+                                      <div className="absolute right-0 bottom-6 hidden group-hover:block bg-[var(--color-card)] border border-[var(--color-border)] text-[10px] text-[var(--color-text-secondary)] rounded-lg p-2.5 w-64 z-20 shadow-xl leading-normal">
+                                        Imported and custom text sessions are excluded from the global leaderboard to maintain a fair competitive environment.
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 mt-2 text-[11px]">
+                                    <div className="flex items-center gap-1.5 text-emerald-400 font-medium">
+                                      <Check size={12} />
+                                      <span>Progress will be saved</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-emerald-400 font-medium">
+                                      <Check size={12} />
+                                      <span>Statistics will be saved</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-emerald-400 font-medium">
+                                      <Check size={12} />
+                                      <span>Session history will be saved</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-rose-400 font-medium">
+                                      <X size={12} />
+                                      <span>Won&apos;t appear on leaderboard</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
 
                               <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-extrabold text-[var(--color-text)]">
